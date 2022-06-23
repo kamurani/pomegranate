@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 
 [project]
-name = "pomegranate-cli"
+name = "pomegranate-protein"
 version = "0.0.1"
 authors = [
   { name="Cam McMenamie", email="cameron.mcmenamie@student.unsw.edu.au" },
   { name="Hannah Veitch", email="hannah.veitch@student.unsw.edu.au" },
   { name="Naomi Warren", email="naomi.warren@student.unsw.edu.au" },
-  { name="Austin Tsai", email="austin.tsai@student.unsw.edu.au" },
+  { name="Austin Tsai", email="austin.tsai@student.unsw.edu.au" },  
 ]
 description = "Phosphosite motif explorer"
 readme = "README.md"

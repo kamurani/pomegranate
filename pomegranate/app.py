@@ -19,11 +19,11 @@ sidebar = html.Div(
         html.P(
             "A placeholder for searching a protein of interest"
         ),
+        html.Button("Button")
     ]
 )
 
 content = html.Div(
-    className="main-content",
     children= [
         dcc.Tabs(id="tab-container", value='single-motif-view', children=[
             dcc.Tab(label='Visualisation', value='single-motif-view'),
@@ -36,7 +36,7 @@ content = html.Div(
 app.layout = html.Div([
 	html.H1('POMEGRANATE'),
     html.H2('PhOsphosite Motif Explorer -- GRAph Network Abstraction Through Embeddings'),
-    html.Div(id="all-content", children=[sidebar,content])
+    html.Div(id="content-grid", children=[sidebar,content])
     
 ])
 

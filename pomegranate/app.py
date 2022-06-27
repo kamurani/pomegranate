@@ -34,8 +34,8 @@ Radius slider component
 '''
 def get_marks():
 
-    DEFAULT_MARKING = 10    # 10Å
     BLUE_MARKING    = 3     #  3Å
+    DEFAULT_MARKING = 10    # 10Å
     
     # Standard markings
     keys = [1, 20, 30]

@@ -14,6 +14,7 @@ import plotly.graph_objects as go
 import seaborn as sns
 from mpl_toolkits.mplot3d import Axes3D
 
+from graphein.utils.utils import protein_letters_3to1_all_caps as aa3to1
 
 '''
 Modified from graphein.protein.visualisation
@@ -23,6 +24,8 @@ def motif_plot_distance_matrix(
     psite: Union[int, str],
     dist_mat: Optional[np.ndarray] = None,
     use_plotly: bool = True,
+    aa_order: Optional[str] = "hydro",
+    reverse_order: bool = False,
     title: Optional[str] = None,
     show_residue_labels: bool = True,
 ) -> go.Figure:
@@ -38,6 +41,9 @@ def motif_plot_distance_matrix(
     :type use_plotly: bool
     :param title: Title of the plot.Defaults to ``None``.
     :type title: str, optional
+    :param aa_order: Method used to order residues on the axes.  Defaults to ``sequence`` order.
+    :type aa_order: str, optional 
+    :param reverse_order: Reverse the ordering of residues on the axes.  Defaults to ``False``.
     :show_residue_labels: Whether to show residue labels on the plot. Defaults to ``True``.
     :type show_residue_labels: bool
     :raises: ValueError if neither a graph ``g`` or a ``dist_mat`` are provided.
@@ -48,9 +54,7 @@ def motif_plot_distance_matrix(
         raise ValueError("Must provide either a graph or a distance matrix.")
 
     if dist_mat is None:
-        dist_mat = g.graph["dist_mat"]
-        
-        dist_mat = g.graph["distmat"]  # ADDED
+        dist_mat = g.graph["distmat"] 
         
         
     # Phospho site 
@@ -60,8 +64,6 @@ def motif_plot_distance_matrix(
         except ValueError:
             raise ValueError("Specified phospho site isn't in correct format.")  
             
-    
-      
     # TODO Check if graph is original (i.e. size of dist_mat == size of graph)
     def get_indexes(node_list):
         indexes = []
@@ -76,18 +78,32 @@ def motif_plot_distance_matrix(
  
         x_range = list(g.nodes)
         
+        # Sort nodes by ordering
+
+        # TODO: store sorting function inside a dict so can be used like a case-switch thing
+        if aa_order == 'seq':
+            x_range = sorted(x_range, key=lambda x: int(x.split(':')[-1]))
+        elif aa_order == 'euclidean':
+            # sort ascending distance
+            pass
+        elif aa_order == 'hydro':
+            # hydrophobicity ascending
+            ordering = "IVLFCMAWGTSYPHNDQEKR"
+            x_range = sorted(x_range, key=lambda res: [ordering.index(a) for a in aa3to1(res.split(':')[1])]) 
+
+        else: 
+            raise ValueError(f"'{aa_order}' isn't a valid axis ordering.")
+         
         
+        # sequence order (ascending)
+
+
         
-        #nums = get_indexes(x_range)
-        
-        # Sort nodes by sequence order (ascending)
-        x_range = sorted(x_range, key=lambda x: int(x.split(':')[-1]))
         y_range = x_range.copy()
         
         # TODO sort by distance
         
-        # add phospho label to selected AA
-        
+        # add phospho label to selected site
         for i in range(len(x_range)):
             s = x_range[i]
             if psite == int(s.split(':')[-1]):

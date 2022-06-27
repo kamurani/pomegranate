@@ -1,13 +1,10 @@
 
-import dash
 from dash import Dash, dcc, html, callback, Input, Output
 import plotly.express as px
 import pandas as pd
 import numpy as np
 
 from protein.phosphosite import *  
-
-dash.register_page(__name__)
 
 # Get data 
 # --------
@@ -16,7 +13,6 @@ prot_id = "Q9Y2X7"
 g = get_protein_graph(prot_id)
 
 psites = get_phosphosites(g)
-
 
 
 '''
@@ -38,41 +34,7 @@ def get_marks():
     
     return marks
 
-'''
-Layout
-'''
-layout = html.Div([
-    dcc.Graph(id='graph-adjacency-matrix'),
-    dcc.Slider(0, 30,
-               value=10,
-               marks=get_marks(),
-               included=True, # show trail
-               id='radius-threshold-slider'
-    ),
-    
-    html.Div([
-        dcc.Checklist(id='selected-psite-residue-types',
-                    options=['SER', 'THR', 'TYR', 'HIS'],
-                    value=['SER', 'THR', 'TYR'],
-                    inline=True
-        ),
-        dcc.Dropdown(
-            id='selected-psite-dropdown',
-            options=[{'label':site, 'value':site} for site in psites],
-            value = psites[0]
-            ),
-    ], style={'width': '20%', 'display': 'inline-block'}
-    ),
-            
-    html.Div([
-    dcc.Dropdown(
-        id='opt-dropdown',
-        ),
-        ],style={'width': '20%', 'display': 'inline-block'}
-    ),
-    
-    html.Div(id='slider-output-container')
-])
+
 
 
 
@@ -113,6 +75,42 @@ def update_graph(radius, psite):
     # update figure 
     title = g.graph["name"] + f" MOTIF @ {psite}, threshold = {radius} Å"
     figure = get_adjacency_matrix_plot(s_g, psite=psite, title=title)
-    
-    
+      
     return figure
+
+'''
+Layout
+'''
+def motifVisualisationTab ():
+    return html.Div([
+        dcc.Graph(id='graph-adjacency-matrix'),
+        dcc.Slider(0, 30,
+                value=10,
+                marks=get_marks(),
+                included=True, # show trail
+                id='radius-threshold-slider'
+        ),
+        
+        html.Div([
+            dcc.Checklist(id='selected-psite-residue-types',
+                        options=['SER', 'THR', 'TYR', 'HIS'],
+                        value=['SER', 'THR', 'TYR'],
+                        inline=True
+            ),
+            dcc.Dropdown(
+                id='selected-psite-dropdown',
+                options=[{'label':site, 'value':site} for site in psites],
+                value = psites[0]
+                ),
+        ], style={'width': '20%', 'display': 'inline-block'}
+        ),
+                
+        html.Div([
+        dcc.Dropdown(
+            id='opt-dropdown',
+            ),
+            ],style={'width': '20%', 'display': 'inline-block'}
+        ),
+        
+        html.Div(id='slider-output-container')
+    ])

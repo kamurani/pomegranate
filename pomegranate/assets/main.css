@@ -1,0 +1,32 @@
+#sidebar {
+    position: "fixed";
+    left: 0;
+    width: 17vw;
+    padding: "2em 1em";
+    background-color: "#f8f9fa";
+}
+
+.main-content {
+    margin-left: "18em";
+    margin-right: "2em";
+    padding: "2em 1em";
+    width: 80vw;
+}
+
+#all-content {
+    display: grid;
+    grid-template-columns: 2;
+}
+
+/* HEADER */
+#header {
+    background-color: #e0edf3;
+    top: 16px;
+    height: 7vh;
+    padding: 1vh;
+    display: flex;
+    color: #002e41;
+    align-items: center;
+    font-size: 14px;
+    text-align: center;
+}

@@ -52,34 +52,50 @@ def get_phosphosites(g, residues=['SER', 'THR', 'TYR', 'HIS']):
     
 # TODO: make this function receive a `list` of dict(id=id, site=site) 
 # this function then returns a list of graphs
-def get_protein_graph(id=None, use_alphafold=True):
+def get_protein_graph(id=None, path=None, database="AlphaFold", out_dir='/tmp'):
     
+
+    # TODO: option that 'saves' the PDB file instead of downloading it to /tmp 
+
+    database = database.lower()
+
     config = ProteinGraphConfig()
     #query = dict(prot_id="Q9Y2X7", phosphosite=224)
 
-    protein_path = STRUCTURE_PATH + '/' + id + '.pdb'
+
+    # protein id given; check for local copy
+    if id:
+        protein_path = STRUCTURE_PATH + '/' + id + '.pdb'
+    # user-specified local file
+    if path: 
+        protein_path = path
+        if not os.path.isfile(protein_path):
+            raise ValueError("Specified path is not a PDB file.")
+ 
+    if protein_path is None:
+        raise ValueError("Must specify a protein by providing a PDB file path or protein code.")
     
-    if use_alphafold:
-        protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
-
-
-   
-
     # TODO: separate structures into alphafold / pdb. 
-    # Check if this file has been downloaded before.
-    if os.path.isfile(protein_path):
-        print(f"Using local PDB file for {id}.")
-        g = construct_graph(config=config, pdb_path=protein_path)
-    else:
-        print(f"Retrieving {id} from PDB...")
-        g = construct_graph(config=config, pdb_code=id)
 
+
+    # Check if this file has been downloaded before.
+    if protein_path and os.path.isfile(protein_path):
+        print(f"Using local PDB file for {id}.")
+        g = construct_graph(config=config, pdb_path=protein_path, pdb_code=id)
+    else:
+        if database == 'alphafold':
+            protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=out_dir)
+            print(f"Retrieving {id} from AlphaFold...")
+            g = construct_graph(config=config, pdb_path=protein_path)
+
+        elif database == 'pdb':   
+            try:
+                g = construct_graph(config=config, pdb_code=id)
+            except:
+                raise ValueError(f"Invalid PDB code.")
+            print(f"Retrieving {id} from PDB...")
     
-    # TODO: check if file exists and download if not. 
-   
-    
-    # construct graph
-   
+
     return g
     
 '''

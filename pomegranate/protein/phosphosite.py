@@ -6,7 +6,16 @@ __all__ = ['get_protein_graph', 'get_protein_subgraph_radius',
 
 
 
-# Thr12 on Ubiquitin is phosphorylated (5nvg.pdb)
+
+### DEFINITIONS
+from definitions import ROOT_DIR, STRUCTURE_PATH
+
+### External libraries
+import os
+import numpy as np
+
+# Plotly 
+import plotly.express as px
 
 from graphein.protein.config import ProteinGraphConfig
 from graphein.protein.graphs import construct_graph
@@ -18,10 +27,6 @@ from graphein.protein.subgraphs import extract_subgraph_from_point, extract_k_ho
 # Custom plot function
 from visualisation.plot import motif_plot_distance_matrix
 
-import numpy as np
-
-
-
 '''
 TODO: 
 - colour by similarity (AA) instead of distance
@@ -29,8 +34,6 @@ TODO:
 
 
 
-# Plotly 
-import plotly.express as px
 
 
 # TODO convert from single to triple letter codes
@@ -49,20 +52,34 @@ def get_phosphosites(g, residues=['SER', 'THR', 'TYR', 'HIS']):
     
 # TODO: make this function receive a `list` of dict(id=id, site=site) 
 # this function then returns a list of graphs
-def get_protein_graph(id=None):
+def get_protein_graph(id=None, use_alphafold=True):
     
     config = ProteinGraphConfig()
     #query = dict(prot_id="Q9Y2X7", phosphosite=224)
+
+    protein_path = STRUCTURE_PATH + '/' + id + '.pdb'
     
-    out_dir = './structures' 
-    
-    protein_path = out_dir + '/' + id + '.pdb'
+    if use_alphafold:
+        protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
+
+
+   
+
+    # TODO: separate structures into alphafold / pdb. 
+    # Check if this file has been downloaded before.
+    if os.path.isfile(protein_path):
+        print(f"Using local PDB file for {id}.")
+        g = construct_graph(config=config, pdb_path=protein_path)
+    else:
+        print(f"Retrieving {id} from PDB...")
+        g = construct_graph(config=config, pdb_code=id)
+
     
     # TODO: check if file exists and download if not. 
-    #protein_path = download_alphafold_structure(prot_id, aligned_score=False, out_dir=out_dir)
+   
     
     # construct graph
-    g = construct_graph(config=config, pdb_path=protein_path)
+   
     return g
     
 '''

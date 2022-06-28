@@ -251,7 +251,7 @@ def motif_plot_protein_structure_graph(
         def node_scale_size(G, feature):
             if feature == 'degree':
                 return lambda k : node_size_min + node_size_multiplier * G.degree[k]
-            elif feature == 'asa':
+            elif feature in ['rsa', 'asa']:
                 return lambda k : node_size_min + node_size_multiplier * G.nodes(data=True)[k]
             
         

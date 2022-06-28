@@ -106,9 +106,18 @@ def update_graph(radius, asa_threshold, psite, axis_order):
 '''
 Layout
 '''
-def motifVisualisationTab ():
+def motifVisualisationTab(vistype="heatmap"):
+
+    # takes in a type of visualisation.  Returns a composition of html elements
+    # that will be integrated with the callback functions for that particular 
+    # visualisation type. 
+    plot = {
+        "heatmap": dcc.Graph(id='graph-adjacency-matrix'),
+        "graph3d": dcc.Graph(id='graph-3d')
+    }
+
     return html.Div([
-        dcc.Graph(id='graph-adjacency-matrix'),
+        plot[vistype],
         dcc.Slider(0, 30,
                 value=10,
                 marks=get_marks(),

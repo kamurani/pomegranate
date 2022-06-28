@@ -60,5 +60,10 @@ def render_content(tab):
         ])
 
 
+def start_server():
+    app.run_server(debug=True, port=8050)
+
+
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    
+    start_server()

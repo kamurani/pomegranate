@@ -241,6 +241,20 @@ def motif_plot_protein_structure_graph(
         fig = plt.figure(figsize=figsize)
         ax = Axes3D(fig, auto_add_to_figure=True)
 
+        
+        # TODO: incoroprate something like this dict:
+        dict(degree=G.degree[key],
+            asa=G.nodes[key],
+        )
+
+        # Get node scaling function
+        def node_scale_size(G, feature):
+            if feature == 'degree':
+                return lambda k : node_size_min + node_size_multiplier * G.degree[k]
+            elif feature == 'asa':
+                return lambda k : node_size_min + node_size_multiplier * G.nodes(data=True)[k]
+            
+        
         # Loop on the pos dictionary to extract the x,y,z coordinates of each node
         for i, (key, value) in enumerate(pos.items()):
             xi = value[0]
@@ -253,7 +267,7 @@ def motif_plot_protein_structure_graph(
                 yi,
                 zi,
                 color=node_colors[i],
-                s=node_size_min + node_size_multiplier * G.degree[key],
+                s=node_scale_size(key),
                 edgecolors="k",
                 alpha=node_alpha,
             )

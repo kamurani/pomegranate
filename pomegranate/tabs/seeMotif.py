@@ -4,15 +4,24 @@ import plotly.express as px
 import pandas as pd
 import numpy as np
 
-from protein.phosphosite import *  
+from protein.phosphosite import *
+from protein.phosphosite import get_surface_motif  
 
 # Get data 
 # --------
 
+
+#### HARDCODED PROTEIN FOR NOW; TODO: USE INPUT TO ASSIGN PROTEIN ####
 prot_id = "Q9Y2X7"
-g = get_protein_graph(prot_id)
+
+prot_id = "4hhb" # PDB file.  Try using with extract_surface_subgraph. 
+USE_ALPHAFOLD = False
+g = get_protein_graph(prot_id, use_alphafold=USE_ALPHAFOLD, config="asa")
 
 psites = get_phosphosites(g)
+
+
+## TODO: add slider for ASA threshold (subgraph selection)
 
 
 '''
@@ -71,9 +80,14 @@ def update_graph(radius, psite):
     if not psite:
         psite = get_phosphosites(g1)[0]
     
-    s_g = get_protein_subgraph_radius(g1, site=psite, r=radius)
+    ASA_THRESHOLD = 0.5
+
+    asa_threshold = ASA_THRESHOLD
+    s_g = get_surface_motif(g1, site=psite, r=radius, asa_threshold=None)
     # update figure 
-    title = g.graph["name"] + f" MOTIF @ {psite}, threshold = {radius} Å"
+    name = g.graph["name"]
+    title = name.upper() + f""" STRUCTURAL MOTIF @ {psite}, threshold: {radius} Å
+                                <br>Surface accessibility threshold: {asa_threshold}"""
     figure = get_adjacency_matrix_plot(s_g, psite=psite, title=title)
       
     return figure

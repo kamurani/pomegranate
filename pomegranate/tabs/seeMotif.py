@@ -80,10 +80,10 @@ def update_graph(radius, psite):
     if not psite:
         psite = get_phosphosites(g1)[0]
     
-    ASA_THRESHOLD = 0.5
+    ASA_THRESHOLD = 0.1
 
     asa_threshold = ASA_THRESHOLD
-    s_g = get_surface_motif(g1, site=psite, r=radius, asa_threshold=None)
+    s_g = get_surface_motif(g1, site=psite, r=radius, asa_threshold=asa_threshold)
     # update figure 
     name = g.graph["name"]
     title = name.upper() + f""" STRUCTURAL MOTIF @ {psite}, threshold: {radius} Å

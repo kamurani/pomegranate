@@ -4,15 +4,24 @@ import plotly.express as px
 import pandas as pd
 import numpy as np
 
-from protein.phosphosite import *  
+from protein.phosphosite import *
+from protein.phosphosite import get_surface_motif  
 
 # Get data 
 # --------
 
+
+#### HARDCODED PROTEIN FOR NOW; TODO: USE INPUT TO ASSIGN PROTEIN ####
 prot_id = "Q9Y2X7"
-g = get_protein_graph(prot_id)
+
+prot_id = "4hhb" # PDB file.  Try using with extract_surface_subgraph. 
+USE_ALPHAFOLD = False
+g = get_protein_graph(prot_id, use_alphafold=USE_ALPHAFOLD, config="asa")
 
 psites = get_phosphosites(g)
+
+
+## TODO: add slider for ASA threshold (subgraph selection)
 
 
 '''
@@ -34,9 +43,14 @@ def get_marks():
     
     return marks
 
+'''
+ASA Slider component
+'''
+DEFAULT_ASA_THRESHOLD = 0.5
 
-
-
+keys = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+vals = [dict(label=f"{k} ASA") for k in keys]
+ASA_THRESHOLD_SLIDER_MARKS = dict(zip(keys, vals))
 
 
 
@@ -48,6 +62,10 @@ def update_selected_psite(value):
     s_g = get_protein_subgraph_radius(g1, site=psite, r=value)
 '''
 
+
+'''
+Phosphosite dropdown menu
+'''
 @callback(
     Output('selected-psite-dropdown', 'options'),
     Input('selected-psite-residue-types', 'value'),
@@ -58,23 +76,30 @@ def update_psite_dropdown(residues):
     return get_phosphosites(g1, residues)
 
 
+'''
+Adjacency matrix plot
+'''
 @callback(
     Output('graph-adjacency-matrix', 'figure'),
     Input('radius-threshold-slider', 'value'),
+    Input('asa-threshold-slider', 'value'),
     Input('selected-psite-dropdown', 'value'),
+    Input('axis-order-dropdown', 'value'),
     )
     
-def update_graph(radius, psite):
+def update_graph(radius, asa_threshold, psite, axis_order):
     # Get new subgraph
     g1 = g.copy()
     
     if not psite:
         psite = get_phosphosites(g1)[0]
     
-    s_g = get_protein_subgraph_radius(g1, site=psite, r=radius)
+    s_g = get_surface_motif(g1, site=psite, r=radius, asa_threshold=asa_threshold)
     # update figure 
-    title = g.graph["name"] + f" MOTIF @ {psite}, threshold = {radius} Å"
-    figure = get_adjacency_matrix_plot(s_g, psite=psite, title=title)
+    name = g.graph["name"]
+    title = name.upper() + f""" STRUCTURAL MOTIF @ {psite}, threshold: {radius} Å
+                                <br>Surface accessibility threshold: {asa_threshold}"""
+    figure = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order)
       
     return figure
 
@@ -89,6 +114,12 @@ def motifVisualisationTab ():
                 marks=get_marks(),
                 included=True, # show trail
                 id='radius-threshold-slider'
+        ),
+        dcc.Slider(0.0, 1.0,
+                value=DEFAULT_ASA_THRESHOLD,
+                marks=ASA_THRESHOLD_SLIDER_MARKS,
+                included=True, # show trail
+                id='asa-threshold-slider'
         ),
         
         html.Div([
@@ -107,7 +138,10 @@ def motifVisualisationTab ():
                 
         html.Div([
         dcc.Dropdown(
-            id='opt-dropdown',
+            id='axis-order-dropdown',
+            options=[{'label':"Sequence position", 'value': "seq"}, 
+                    {'label':"Hydrophobicity", 'value':"hydro"}],
+            value="hydro"
             ),
             ],style={'width': '20%', 'display': 'inline-block'}
         ),

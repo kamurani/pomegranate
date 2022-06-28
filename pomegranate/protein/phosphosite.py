@@ -22,8 +22,11 @@ from graphein.protein.graphs import construct_graph
 from graphein.protein.utils import download_alphafold_structure
 
 from graphein.protein.visualisation import plot_distance_matrix, plotly_protein_structure_graph, plot_chord_diagram	
-from graphein.protein.subgraphs import extract_subgraph_from_point, extract_k_hop_subgraph, extract_subgraph
-	
+from graphein.protein.subgraphs import extract_subgraph_from_point, extract_k_hop_subgraph, extract_subgraph, extract_surface_subgraph
+
+
+from graphein.protein.edges.distance import *	
+
 # Custom plot function
 from visualisation.plot import motif_plot_distance_matrix
 
@@ -52,57 +55,86 @@ def get_phosphosites(g, residues=['SER', 'THR', 'TYR', 'HIS']):
     
 # TODO: make this function receive a `list` of dict(id=id, site=site) 
 # this function then returns a list of graphs
-def get_protein_graph(id=None, path=None, database="AlphaFold", out_dir='/tmp'):
+def get_protein_graph(id=None, use_alphafold=True, config=None):
     
-
-    # TODO: option that 'saves' the PDB file instead of downloading it to /tmp 
-
-    database = database.lower()
-
-    config = ProteinGraphConfig()
-    #query = dict(prot_id="Q9Y2X7", phosphosite=224)
-
-
-    # protein id given; check for local copy
-    if id:
-        protein_path = STRUCTURE_PATH + '/' + id + '.pdb'
-    # user-specified local file
-    if path: 
-        protein_path = path
-        if not os.path.isfile(protein_path):
-            raise ValueError("Specified path is not a PDB file.")
- 
-    if protein_path is None:
-        raise ValueError("Must specify a protein by providing a PDB file path or protein code.")
+    # Graph configuration
+    if not config:
+        config = ProteinGraphConfig()   # default
     
+    if config in ["asa", "rsa"]:
+
+        use_alphafold = False 
+        # Edge functions
+        edge_fns = [
+            add_aromatic_interactions,
+            add_hydrophobic_interactions,
+            add_aromatic_sulphur_interactions,
+            add_cation_pi_interactions,
+            add_disulfide_interactions,
+            add_hydrogen_bond_interactions,
+            add_ionic_interactions,
+            add_peptide_bonds
+            ]
+
+        from graphein.protein.config import DSSPConfig
+        from graphein.protein.features.nodes import rsa
+        config = ProteinGraphConfig(edge_construction_functions=edge_fns, 
+                                    graph_metadata_functions=[rsa], 
+                                    dssp_config=DSSPConfig()
+        )
+
+
+    protein_path = STRUCTURE_PATH + '/' + id + '.pdb'
+    
+    if use_alphafold:
+        protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
+
+
+   
     # TODO: separate structures into alphafold / pdb. 
-
-
     # Check if this file has been downloaded before.
-    if protein_path and os.path.isfile(protein_path):
+    if os.path.isfile(protein_path):
         print(f"Using local PDB file for {id}.")
-        g = construct_graph(config=config, pdb_path=protein_path, pdb_code=id)
+        g = construct_graph(config=config, pdb_path=protein_path)
     else:
-        if database == 'alphafold':
-            protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=out_dir)
-            print(f"Retrieving {id} from AlphaFold...")
-            g = construct_graph(config=config, pdb_path=protein_path)
+        print(f"Retrieving {id} from PDB...")
+        g = construct_graph(config=config, pdb_code=id)
 
-        elif database == 'pdb':   
-            try:
-                g = construct_graph(config=config, pdb_code=id)
-            except:
-                raise ValueError(f"Invalid PDB code.")
-            print(f"Retrieving {id} from PDB...")
     
-
+    # TODO: check if file exists and download if not. 
+   
+    
+    # construct graph
+   
     return g
+
+'''
+Given graph ``g`` get subgraph within radius of psite, and surface residues above 
+ASA threshold. 
+'''
+def get_surface_motif(g=None, site=1, r=10, asa_threshold=0.5):
+
+    
+    s_g = get_protein_subgraph_radius(g=g, site=site, r=r)
+
+    if asa_threshold:
+        try:
+            surface = extract_surface_subgraph(s_g, asa_threshold, 
+                                                recompute_distmat=True,
+                                                filter_dataframe=True
+            )
+        except:
+            raise ValueError("Specified graph does not have RSA metadata.")
+        return surface
+    else:
+        return s_g # Don't consider surface if asa is None
+
+    
     
 '''
 Given a graph ``g`` get a subgraph from radius and known phos site
 '''
 def get_protein_subgraph_radius(g=None, site=1, r=10):
-   
    
     if isinstance(site, str):
         try:
@@ -121,17 +153,16 @@ def get_protein_subgraph_radius(g=None, site=1, r=10):
                                         recompute_distmat=True, 
                                         filter_dataframe=True)
     
-    
     return s_g
     
 
 # TODO: make separate function for extracting subgraph that is independent of the get_plot
 
 
-def get_adjacency_matrix_plot(g=None, psite=1, title=None):
+def get_adjacency_matrix_plot(g=None, psite=1, title=None, order='seq'):
     
     # subgraph
     
     #fig = plot_distance_matrix(g, title=title)
-    fig = motif_plot_distance_matrix(g, psite=psite, title=title)
+    fig = motif_plot_distance_matrix(g, psite=psite, title=title, aa_order=order)
     return fig

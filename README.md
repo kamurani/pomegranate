@@ -9,6 +9,19 @@ Pomegranate interactively explores phosphosite motifs on protein structures.
 ## Installation 
 
 
+### Dependencies
+
+```
+pip install graphein 
+pip install dash
+
+# DSSP 
+conda install -c salilab dssp
+# or 
+sudo apt-get install dssp
+```
+
+
 ## Usage 
 
 

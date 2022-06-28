@@ -21,9 +21,6 @@ g = get_protein_graph(prot_id, use_alphafold=USE_ALPHAFOLD, config="asa")
 psites = get_phosphosites(g)
 
 
-## TODO: add slider for ASA threshold (subgraph selection)
-
-
 '''
 Radius slider component
 '''

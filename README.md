@@ -17,6 +17,8 @@ pip install dash
 
 # DSSP 
 conda install -c salilab dssp
+# or 
+sudo apt-get install dssp
 ```
 
 

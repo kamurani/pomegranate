@@ -1,4 +1,4 @@
-# Custom plot functions 
+"""Custom plot functions.  Modified from graphein.protein.visualisation"""
 
 
 from __future__ import annotations

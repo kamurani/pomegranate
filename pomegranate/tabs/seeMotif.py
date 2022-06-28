@@ -5,7 +5,8 @@ import pandas as pd
 import numpy as np
 
 from protein.phosphosite import *
-from protein.phosphosite import get_surface_motif  
+from protein.phosphosite import get_surface_motif
+from protein.phosphosite import get_structure_graph_plot  
 
 # Get data 
 # --------
@@ -78,13 +79,14 @@ Adjacency matrix plot
 '''
 @callback(
     Output('graph-adjacency-matrix', 'figure'),
+    Input('vis-type-dropdown', 'value'),
     Input('radius-threshold-slider', 'value'),
     Input('asa-threshold-slider', 'value'),
     Input('selected-psite-dropdown', 'value'),
     Input('axis-order-dropdown', 'value'),
     )
     
-def update_graph(radius, asa_threshold, psite, axis_order):
+def update_graph(vistype, radius, asa_threshold, psite, axis_order):
     # Get new subgraph
     g1 = g.copy()
     
@@ -96,9 +98,20 @@ def update_graph(radius, asa_threshold, psite, axis_order):
     name = g.graph["name"]
     title = name.upper() + f""" STRUCTURAL MOTIF @ {psite}, threshold: {radius} Å
                                 <br>Surface accessibility threshold: {asa_threshold}"""
-    figure = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order)
-      
+
+    if vistype == "heatmap":
+        figure = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order)
+    elif vistype == "3dgraph":
+        figure = get_structure_graph_plot(s_g, psite=psite, title=title)
+    else:
+        raise ValueError(f"Undefined visualisation type '{vistype}'")
     return figure
+
+def get_structure():
+
+    s_g = g.copy()
+
+    return get_structure_graph_plot(s_g, psite=1, title="Title")
 
 '''
 Layout
@@ -148,6 +161,15 @@ def motifVisualisationTab(vistype="heatmap"):
             options=[{'label':"Sequence position", 'value': "seq"}, 
                     {'label':"Hydrophobicity", 'value':"hydro"}],
             value="hydro"
+            ),
+            ],style={'width': '20%', 'display': 'inline-block'}
+        ),
+        html.Div([
+        dcc.Dropdown(
+            id='vis-type-dropdown',
+            options=[{'label':"Distance heatmap", 'value': "heatmap"}, 
+                    {'label':"Structure graph", 'value':"3dgraph"}],
+            value="heatmap"
             ),
             ],style={'width': '20%', 'display': 'inline-block'}
         ),

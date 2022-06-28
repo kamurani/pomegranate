@@ -154,15 +154,27 @@ def get_protein_subgraph_radius(g=None, site=1, r=10):
                                         filter_dataframe=True)
     
     return s_g
-    
 
-# TODO: make separate function for extracting subgraph that is independent of the get_plot
-
-
+'''
+Get heatmap plot of adjacency matrix from graph. 
+'''
 def get_adjacency_matrix_plot(g=None, psite=1, title=None, order='seq'):
     
-    # subgraph
     
     #fig = plot_distance_matrix(g, title=title)
     fig = motif_plot_distance_matrix(g, psite=psite, title=title, aa_order=order)
     return fig
+
+'''
+Get a 3D structure graph 
+'''
+def get_structure_graph_plot(g=None, psite=1, title=None):
+
+    # TODO: different 'colour by' options
+    # customisable by user 
+    # we want to reflect uniqueness of the motif
+
+    return plotly_protein_structure_graph(
+        G=g,
+        plot_title=title
+        )

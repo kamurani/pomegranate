@@ -14,7 +14,7 @@ app = Dash(__name__, external_stylesheets=external_stylesheets)
 sidebar = html.Div(
     id="sidebar",
     children= [
-        html.H2("Find a protein"),
+        html.H3("Find a protein"),
         html.Hr(),
         html.P(
             "A placeholder for searching a protein of interest"
@@ -27,7 +27,9 @@ content = html.Div(
     children= [
         dcc.Tabs(id="tab-container", value='single-motif-view', children=[
             dcc.Tab(label='Visualisation', value='single-motif-view'),
-            dcc.Tab(label='Example 2nd Tab', value='tab-1-example-graph'),
+            dcc.Tab(label='Compare Motifs', value='multi-motif-view'),
+            dcc.Tab(label='Proteome View', value='clustering'),
+            dcc.Tab(label='Help', value='documentation'),
         ]),
         html.Div(id='tabs-content'),
     ]
@@ -45,9 +47,9 @@ app.layout = html.Div([
 def render_content(tab):
     if tab == 'single-motif-view':
         return motifVisualisationTab()
-    elif tab == 'tab-1-example-graph':
+    elif tab == 'multi-motif-view':
         return html.Div([
-            html.H3('Tab content 1'),
+            html.H3('Placeholder graph'),
             dcc.Graph(
                 figure={
                     'data': [{
@@ -58,6 +60,10 @@ def render_content(tab):
                 }
             )
         ])
+    elif tab == 'clustering':
+        return html.H3('Look how cool our clusters are')
+    elif tab == 'documentation':
+        return html.H3('Documentation')
 
 
 if __name__ == '__main__':

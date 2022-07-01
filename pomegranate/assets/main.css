@@ -21,5 +21,36 @@
 #sidebar {
     position: "fixed";
     padding: "2em 1em";
-    background-color: "#f8f9fa";
+    background-color: #f8f9fa;
 }
+
+.tab-content {
+    background-color: #e9e7e8;
+}
+
+.tab-component {
+    background-color: #faf8f9;
+}
+
+
+/* SINGLE MOTIF VIEW TAB */
+#single-motif .tab-content { 
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 3fr 1fr;
+    gap: 10px 10px;
+    padding: 10px;
+    grid-auto-flow: row;
+    grid-template-areas:
+      "motif-display motif-display display-type"
+      "motif-display motif-display options"
+      "sliders sliders sliders";
+}
+  
+.motif-display { grid-area: motif-display; }
+  
+.display-type { grid-area: display-type; }
+  
+.options { grid-area: options; }
+  
+.sliders { grid-area: sliders; }

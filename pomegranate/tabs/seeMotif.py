@@ -107,8 +107,29 @@ def update_graph(radius, asa_threshold, psite, axis_order):
 Layout
 '''
 def motifVisualisationTab ():
-    return html.Div([
-        dcc.Graph(id='graph-adjacency-matrix'),
+    return html.Div( className='tab-content', children=[
+        dcc.Graph(id='graph-adjacency-matrix', className='motif-display'),
+        html.Div(className='display-type', children=[
+            html.H3('choose display type')
+        ]),
+        html.Div(className='options', children=[
+            dcc.Checklist(id='selected-psite-residue-types',
+                options=['SER', 'THR', 'TYR', 'HIS'],
+                value=['SER', 'THR', 'TYR'],
+                inline=True
+            ),
+            dcc.Dropdown(
+                id='selected-psite-dropdown',
+                options=[{'label':site, 'value':site} for site in psites],
+                value = psites[0]
+            ),
+            dcc.Dropdown(
+                id='axis-order-dropdown',
+                options=[{'label':"Sequence position", 'value': "seq"}, 
+                    {'label':"Hydrophobicity", 'value':"hydro"}],
+                value="hydro"
+            )
+        ]),
         dcc.Slider(0, 30,
                 value=10,
                 marks=get_marks(),
@@ -121,30 +142,5 @@ def motifVisualisationTab ():
                 included=True, # show trail
                 id='asa-threshold-slider'
         ),
-        
-        html.Div([
-            dcc.Checklist(id='selected-psite-residue-types',
-                        options=['SER', 'THR', 'TYR', 'HIS'],
-                        value=['SER', 'THR', 'TYR'],
-                        inline=True
-            ),
-            dcc.Dropdown(
-                id='selected-psite-dropdown',
-                options=[{'label':site, 'value':site} for site in psites],
-                value = psites[0]
-                ),
-        ], style={'width': '20%', 'display': 'inline-block'}
-        ),
-                
-        html.Div([
-        dcc.Dropdown(
-            id='axis-order-dropdown',
-            options=[{'label':"Sequence position", 'value': "seq"}, 
-                    {'label':"Hydrophobicity", 'value':"hydro"}],
-            value="hydro"
-            ),
-            ],style={'width': '20%', 'display': 'inline-block'}
-        ),
-        
-        html.Div(id='slider-output-container')
+        html.Div(id='slider-output-container', className='sliders')
     ])

@@ -25,13 +25,13 @@ sidebar = html.Div(
 
 content = html.Div(
     children= [
-        dcc.Tabs(id="tab-container", value='single-motif-view', children=[
+        dcc.Tabs(id="tab-options", value='single-motif-view', children=[
             dcc.Tab(label='Visualisation', value='single-motif-view'),
             dcc.Tab(label='Compare Motifs', value='multi-motif-view'),
             dcc.Tab(label='Proteome View', value='clustering'),
             dcc.Tab(label='Help', value='documentation'),
         ]),
-        html.Div(id='tabs-content'),
+        html.Div(id='tab-container'),
     ]
 )
 
@@ -42,8 +42,8 @@ app.layout = html.Div([
     
 ])
 
-@app.callback(Output('tabs-content', 'children'),
-              Input('tab-container', 'value'))
+@app.callback(Output('tab-container', 'children'),
+              Input('tab-options', 'value'))
 def render_content(tab):
     if tab == 'single-motif-view':
         return motifVisualisationTab()

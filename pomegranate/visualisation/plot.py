@@ -164,7 +164,7 @@ def motif_plot_protein_structure_graph(
     G: nx.Graph,
     angle: int = 30,
     plot_title: Optional[str] = None,
-    figsize: Tuple[int, int] = (10, 7),
+    figsize: Tuple[int, int] = (7, 7),
     node_alpha: float = 0.7,
     node_size_min: float = 20.0,
     node_size_multiplier: float = 20.0,

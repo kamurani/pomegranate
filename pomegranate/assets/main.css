@@ -30,27 +30,20 @@
 
 .tab-component {
     background-color: #faf8f9;
+    padding: 10px;
 }
 
 
 /* SINGLE MOTIF VIEW TAB */
-#single-motif .tab-content { 
+.single-motif-tab-content { 
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: 1fr 3fr 1fr;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
     gap: 10px 10px;
     padding: 10px;
-    grid-auto-flow: row;
-    grid-template-areas:
-      "motif-display motif-display display-type"
-      "motif-display motif-display options"
-      "sliders sliders sliders";
 }
   
-.motif-display { grid-area: motif-display; }
-  
-.display-type { grid-area: display-type; }
-  
-.options { grid-area: options; }
-  
-.sliders { grid-area: sliders; }
+.matrix-display { grid-area: 1 / 1 / 5 / 4; }
+.graph-display { grid-area: 1 / 4 / 3 / 6; }
+.options { grid-area: 3 / 4 / 5 / 6; }
+.sliders { grid-area: 5 / 1 / 6 / 6; }

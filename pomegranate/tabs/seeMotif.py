@@ -107,12 +107,12 @@ def update_graph(radius, asa_threshold, psite, axis_order):
 Layout
 '''
 def motifVisualisationTab ():
-    return html.Div( className='tab-content', children=[
-        dcc.Graph(id='graph-adjacency-matrix', className='motif-display'),
-        html.Div(className='display-type', children=[
-            html.H3('choose display type')
+    return html.Div(className='single-motif-tab-content', children=[
+        dcc.Graph(id='graph-adjacency-matrix', className='matrix-display tab-component'),
+        html.Div(className='graph-display tab-component', children=[
+            html.H3('show graph with surface mesh here')
         ]),
-        html.Div(className='options', children=[
+        html.Div(className='options tab-component', children=[
             dcc.Checklist(id='selected-psite-residue-types',
                 options=['SER', 'THR', 'TYR', 'HIS'],
                 value=['SER', 'THR', 'TYR'],
@@ -130,17 +130,21 @@ def motifVisualisationTab ():
                 value="hydro"
             )
         ]),
-        dcc.Slider(0, 30,
-                value=10,
-                marks=get_marks(),
-                included=True, # show trail
-                id='radius-threshold-slider'
-        ),
-        dcc.Slider(0.0, 1.0,
-                value=DEFAULT_ASA_THRESHOLD,
-                marks=ASA_THRESHOLD_SLIDER_MARKS,
-                included=True, # show trail
-                id='asa-threshold-slider'
-        ),
-        html.Div(id='slider-output-container', className='sliders')
+        html.Div(
+            id='slider-output-container',
+            className='sliders tab-component',
+            children=[
+                dcc.Slider(0, 30,
+                        value=10,
+                        marks=get_marks(),
+                        included=True, # show trail
+                        id='radius-threshold-slider'
+                ),
+                dcc.Slider(0.0, 1.0,
+                        value=DEFAULT_ASA_THRESHOLD,
+                        marks=ASA_THRESHOLD_SLIDER_MARKS,
+                        included=True, # show trail
+                        id='asa-threshold-slider'
+                )
+            ])
     ])

@@ -2,6 +2,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+**P**h**o**sphosite **m**otif **e**xplorer -- **gra**ph **n**etwork **a**bstraction **t**hrough **e**mbeddings 
+
 Pomegranate interactively explores phosphosite motifs on protein structures.
 
 ![](./imgs/POMEGRANATE-LOGO.png)

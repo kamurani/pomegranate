@@ -4,9 +4,9 @@
 
 Pomegranate interactively explores phosphosite motifs on protein structures.
 
-![]("./imgs/POMEGRANATE-LOGO.png")
+![](./imgs/POMEGRANATE-LOGO.png)
 
-![]("./imgs/alphafold_comparison.gif")
+![](./imgs/alphafold_comparison.gif)
 
 ## Installation 
 

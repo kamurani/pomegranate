@@ -23,13 +23,17 @@ sidebar = html.Div(
     ]
 )
 
+tab_selected_style = {
+    'borderTop': '3px solid #b52d37',
+}
+
 content = html.Div(
     children= [
         dcc.Tabs(id="tab-options", value='single-motif-view', children=[
-            dcc.Tab(label='Visualisation', value='single-motif-view'),
-            dcc.Tab(label='Compare Motifs', value='multi-motif-view'),
-            dcc.Tab(label='Proteome View', value='clustering'),
-            dcc.Tab(label='Help', value='documentation'),
+            dcc.Tab(label='Visualisation', value='single-motif-view', selected_style=tab_selected_style),
+            dcc.Tab(label='Compare Motifs', value='multi-motif-view', selected_style=tab_selected_style),
+            dcc.Tab(label='Proteome View', value='clustering', selected_style=tab_selected_style),
+            dcc.Tab(label='Help', value='documentation', selected_style=tab_selected_style),
         ]),
         html.Div(id='tab-container'),
     ]

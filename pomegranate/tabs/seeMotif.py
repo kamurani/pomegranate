@@ -110,9 +110,10 @@ def motifVisualisationTab ():
     return html.Div(className='single-motif-tab-content', children=[
         dcc.Graph(id='graph-adjacency-matrix', className='matrix-display tab-component'),
         html.Div(className='graph-display tab-component', children=[
-            html.H3('show graph with surface mesh here')
+            html.H4('show graph with surface mesh here')
         ]),
         html.Div(className='options tab-component', children=[
+            html.H3('Phosphosite of interest:'),
             dcc.Checklist(id='selected-psite-residue-types',
                 options=['SER', 'THR', 'TYR', 'HIS'],
                 value=['SER', 'THR', 'TYR'],
@@ -121,13 +122,15 @@ def motifVisualisationTab ():
             dcc.Dropdown(
                 id='selected-psite-dropdown',
                 options=[{'label':site, 'value':site} for site in psites],
-                value = psites[0]
+                value = psites[0],
+                style={'width': '80%'}
             ),
             dcc.Dropdown(
                 id='axis-order-dropdown',
                 options=[{'label':"Sequence position", 'value': "seq"}, 
                     {'label':"Hydrophobicity", 'value':"hydro"}],
-                value="hydro"
+                value="hydro",
+                style={'width': '80%'}
             )
         ]),
         html.Div(

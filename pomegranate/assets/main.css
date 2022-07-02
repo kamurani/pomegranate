@@ -38,12 +38,12 @@
 .single-motif-tab-content { 
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    grid-template-rows: repeat(5, 1fr);
+    grid-template-rows: repeat(6, 1fr);
     gap: 10px 10px;
     padding: 10px;
 }
   
-.matrix-display { grid-area: 1 / 1 / 5 / 4; }
-.graph-display { grid-area: 1 / 4 / 3 / 6; }
-.options { grid-area: 3 / 4 / 5 / 6; }
-.sliders { grid-area: 5 / 1 / 6 / 6; }
+.matrix-display { grid-area: 1 / 1 / 6 / 4; }
+.graph-display { grid-area: 1 / 4 / 4 / 6; }
+.options { grid-area: 4 / 4 / 6 / 6; }
+.sliders { grid-area: 6 / 1 / 7 / 6; }

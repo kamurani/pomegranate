@@ -6,7 +6,14 @@ Pomegranate interactively explores phosphosite motifs on protein structures.
 
 ![](./imgs/POMEGRANATE-LOGO.png)
 
+
+
+
+### Download structure from AlphaFold
 ![](./imgs/alphafold_comparison.gif)
+
+### Extract structural motif for a given radius
+
 
 ## Installation 
 

@@ -8,6 +8,8 @@ import dash
 from dash import Dash, dcc, html, Input, Output
 from tabs.seeMotif import motifVisualisationTab
 
+PROTEIN_ID = "default"
+
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = Dash(__name__, external_stylesheets=external_stylesheets)
@@ -70,9 +72,10 @@ def render_content(tab):
     elif tab == 'documentation':
         return html.H3('Documentation')
 
-def main():
+
+
+def run():
     app.run_server(debug=True, port=8050)
 
-
 if __name__ == '__main__':
-    main()
+    run()

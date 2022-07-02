@@ -15,6 +15,8 @@ from protein.phosphosite import get_surface_motif
 prot_id = "Q9Y2X7"
 
 prot_id = "4hhb" # PDB file.  Try using with extract_surface_subgraph. 
+
+
 USE_ALPHAFOLD = False
 g = get_protein_graph(prot_id, use_alphafold=USE_ALPHAFOLD, config="asa")
 

@@ -55,7 +55,7 @@ def get_phosphosites(g, residues=['SER', 'THR', 'TYR', 'HIS']):
     
 # TODO: make this function receive a `list` of dict(id=id, site=site) 
 # this function then returns a list of graphs
-def get_protein_graph(id=None, use_alphafold=True, config=None):
+def get_protein_graph(id=None, config=None, database='PDB'):
     
     # Graph configuration
     if not config:
@@ -63,7 +63,6 @@ def get_protein_graph(id=None, use_alphafold=True, config=None):
     
     if config in ["asa", "rsa"]:
 
-        use_alphafold = False 
         # Edge functions
         edge_fns = [
             add_aromatic_interactions,
@@ -86,7 +85,7 @@ def get_protein_graph(id=None, use_alphafold=True, config=None):
 
     protein_path = STRUCTURE_PATH + '/' + id + '.pdb'
     
-    if use_alphafold:
+    if database in ['AlphaFold', 'SWISS_PROT']:
         protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
 
 
@@ -94,10 +93,10 @@ def get_protein_graph(id=None, use_alphafold=True, config=None):
     # TODO: separate structures into alphafold / pdb. 
     # Check if this file has been downloaded before.
     if os.path.isfile(protein_path):
-        print(f"Using local PDB file for {id}.")
+        print(f"Using local file for {id}.")
         g = construct_graph(config=config, pdb_path=protein_path)
     else:
-        print(f"Retrieving {id} from PDB...")
+        print(f"Retrieving {id}...")
         g = construct_graph(config=config, pdb_code=id)
 
     

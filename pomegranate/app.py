@@ -5,22 +5,26 @@
 
 import dash
 from dash import Dash, dcc, html, Input, Output
-from tabs.seeMotif import motifVisualisationTab
+from tabs.seeMotif import motifVisualisationTab, sidebarTab
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = Dash(__name__, external_stylesheets=external_stylesheets)
 
+# sidebar = html.Div(
+#     id="sidebar",
+#     children= [
+#         html.H3("Find a protein"),
+#         html.Hr(),
+#         html.P(
+#             "A placeholder for searching a protein of interest"
+#         ),
+#         html.Button("Button")
+#     ]
+# )
+
 sidebar = html.Div(
-    id="sidebar",
-    children= [
-        html.H3("Find a protein"),
-        html.Hr(),
-        html.P(
-            "A placeholder for searching a protein of interest"
-        ),
-        html.Button("Button")
-    ]
+    id="sidebar-container",
 )
 
 tab_selected_style = {
@@ -68,6 +72,14 @@ def render_content(tab):
         return html.H3('Look how cool our clusters are')
     elif tab == 'documentation':
         return html.H3('Documentation')
+
+'''
+NOT SURE WHAT TO DO FOR INPUT
+'''
+@app.callback(Output('sidebar-container', 'children'),
+              Input('tab-options', 'value'))
+def render_content(tab):
+    return sidebarTab()
 
 
 if __name__ == '__main__':

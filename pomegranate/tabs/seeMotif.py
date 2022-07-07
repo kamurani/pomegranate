@@ -1,8 +1,9 @@
 
-from dash import Dash, dcc, html, callback, Input, Output
+from dash import Dash, dcc, html, callback, Input, Output, dependencies
 import plotly.express as px
 import pandas as pd
 import numpy as np
+import json
 
 from protein.phosphosite import *
 from protein.phosphosite import get_surface_motif  
@@ -12,16 +13,52 @@ from protein.phosphosite import get_surface_motif
 
 
 #### HARDCODED PROTEIN FOR NOW; TODO: USE INPUT TO ASSIGN PROTEIN ####
-prot_id = "Q9Y2X7"
+#prot_id = "Q9Y2X7"
 
-prot_id = "4hhb" # PDB file.  Try using with extract_surface_subgraph. 
-USE_ALPHAFOLD = False
-g = get_protein_graph(prot_id, use_alphafold=USE_ALPHAFOLD, config="asa")
+#prot_id = "4hhb" # PDB file.  Try using with extract_surface_subgraph. 
+#g = get_protein_graph(prot_id, config="asa", database)
 
-psites = get_phosphosites(g)
+#psites = get_phosphosites(g)
 
+'''
+For protein input sidebar
+'''
+fnameDict = {'PDB': ['opt1_p', 'opt2_p', 'opt3_p'], 'SWISS_PROT': ['opt1_s', 'opt2_s'], 'AlphaFold': ['opt1_a']}
 
-## TODO: add slider for ASA threshold (subgraph selection)
+names = list(fnameDict.keys())
+nestedOptions = fnameDict[names[0]]
+
+'''
+Generate variables and use get_protein_graph
+'''
+@callback(
+    Output('intermediate-value-prot', 'children'),
+    Input('db-dropdown', 'value'),
+    Input('prot-input', 'value'),
+)
+def process_prot_input(db_name, prot_id):
+
+    # For AlphaFold and SwissProt
+    USE_ALPHAFOLD == True
+    
+    g = get_protein_graph(prot_id, config="asa", database=db_name)
+    
+    #return graph in json format
+    return json.dumps(g)
+
+'''
+Generate psites
+'''
+@callback(
+    Output('intermediate-value-psites', 'data'),
+    Input('intermediate-value-prot', 'data'),
+)
+def process_psite(graph):
+
+    g = json.loads(graph)
+    psites = get_phosphosites(g)
+    return json.dumps(psite)
+# TODO: add slider for ASA threshold (subgraph selection)
 
 
 '''
@@ -69,9 +106,12 @@ Phosphosite dropdown menu
 @callback(
     Output('selected-psite-dropdown', 'options'),
     Input('selected-psite-residue-types', 'value'),
+    Input('intermediate-value-prot', 'data'),
     )
-def update_psite_dropdown(residues):
+def update_psite_dropdown(residues, graph):
+#def update_psite_dropdown(residues):
     
+    #g = json.loads(graph)
     g1 = g.copy()
     return get_phosphosites(g1, residues)
 
@@ -85,10 +125,13 @@ Adjacency matrix plot
     Input('asa-threshold-slider', 'value'),
     Input('selected-psite-dropdown', 'value'),
     Input('axis-order-dropdown', 'value'),
-    )
+    Input ('intermediate-value-prot', 'data'),
+    )   
     
-def update_graph(radius, asa_threshold, psite, axis_order):
+def update_graph(radius, asa_threshold, psite, axis_order, graph):
+#def update_graph(radius, asa_threshold, psite, axis_order):
     # Get new subgraph
+    g = json.loads(graph)
     g1 = g.copy()
     
     if not psite:
@@ -102,6 +145,11 @@ def update_graph(radius, asa_threshold, psite, axis_order):
     figure = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order)
       
     return figure
+
+'''
+Process Protein Input
+'''
+
 
 '''
 Layout
@@ -151,3 +199,45 @@ def motifVisualisationTab ():
                 )
             ])
     ])
+
+'''
+Debugging to show input
+'''
+@callback(
+    Output('input-show', 'children'),
+    Input('db-dropdown', 'value'),
+    Input('prot-input', 'value'),
+)
+def showInput(db, prot_id):
+    return u'DB: {} ID: {}'.format(db, prot_id)
+
+def sidebarTab():
+    return html.Div(
+        
+        id="sidebar",
+        children=[
+            html.H3("Find a protein"),
+            html.Hr(),
+            dcc.Dropdown(
+                id='db-dropdown',
+                options=[{'label':name, 'value':name} for name in names],
+                value = list(fnameDict.keys())[0],
+                style={'width': '80%'},
+            ),
+            # dcc.Dropdown(
+            #     id='opt-dropdown',
+            #     style={'width': '20%'},
+            # ),
+            dcc.Input(
+                id="prot-input",
+                type="text",
+                value="4hhb" # TODO: REMOVE THIS AFTER TESTING
+                placeholder="Protein ID",
+                style={'width': '80%'},
+                debounce=True,
+            ),
+            dcc.Store(id='intermediate-value-prot'),
+            dcc.Store(id='intermediate-value-psites'),
+            html.Div(id='input-show'), # DEBUGGING inputs
+        ],
+    )

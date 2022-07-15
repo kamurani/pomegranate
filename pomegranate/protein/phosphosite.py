@@ -76,26 +76,32 @@ def get_protein_graph(id=None, use_alphafold=True, config=None):
             add_peptide_bonds
             ]
 
+        # Use structure path of already downloaded PDB file (if it exists) for DSSP calculation.
+        pdb_path = STRUCTURE_PATH + '/' + id + '.pdb'
+
         from graphein.protein.config import DSSPConfig
         from graphein.protein.features.nodes import rsa
         config = ProteinGraphConfig(edge_construction_functions=edge_fns, 
                                     graph_metadata_functions=[rsa], 
-                                    dssp_config=DSSPConfig()
+                                    dssp_config=DSSPConfig(),
+                                    pdb_path=pdb_path,
         )
 
 
-    protein_path = STRUCTURE_PATH + '/' + id + '.pdb'
+
+
+    
     
     if use_alphafold:
-        protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
+        pdb_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
 
 
    
     # TODO: separate structures into alphafold / pdb. 
     # Check if this file has been downloaded before.
-    if os.path.isfile(protein_path):
+    if os.path.isfile(pdb_path):
         print(f"Using local PDB file for {id}.")
-        g = construct_graph(config=config, pdb_path=protein_path)
+        g = construct_graph(config=config, pdb_path=pdb_path)
     else:
         print(f"Retrieving {id} from PDB...")
         g = construct_graph(config=config, pdb_code=id)

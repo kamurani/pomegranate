@@ -59,7 +59,7 @@ def get_protein_graph(id=None, use_alphafold=True, config=None):
     
     # Graph configuration
     if not config:
-        config = ProteinGraphConfig()   # default
+        config = ProteinGraphConfig()   # default graph config file from graphein
     
     if config in ["asa", "rsa"]:
 

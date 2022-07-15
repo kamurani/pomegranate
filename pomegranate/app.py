@@ -3,10 +3,13 @@
 # Run this app with `python app.py` and
 # visit http://127.0.0.1:8050/ in your web browser.
 
+from distutils.log import debug
 import dash
 from dash import Dash, dcc, html, Input, Output
 from tabs.seeMotif import motifVisualisationTab
 from tabs.sideBySide import compareBySideTab
+
+PROTEIN_ID = "default"
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -60,5 +63,9 @@ def render_content(tab):
         return html.H3('Documentation')
 
 
+
+def run():
+    app.run_server(debug=True, port=8050)
+
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    run()

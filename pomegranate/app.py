@@ -45,7 +45,7 @@ content = html.Div(
 
 app.layout = html.Div([
     html.Img(src=app.get_asset_url('imgs/POMEGRANATE-LOGO.png'), style={'width': '40%'}),
-    html.H2('PhOsphosite Motif Explorer -- GRAph Network Abstraction Through Embeddings'),
+    html.H2('PhOsphosite Motif Explorer -- GRAph Network Abstraction Through Embeddings', style={'color': '#C2BEBE'}),
     html.Div(id="content-grid", children=[sidebar,content])
     
 ])

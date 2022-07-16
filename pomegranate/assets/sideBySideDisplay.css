@@ -8,9 +8,6 @@
     padding: 10px;
 }
 
-.first-block { grid-area: 1 / 1 / 5 / 4; }
-.second-block { grid-area: 1 / 4 / 5 / 7; }
-.first-view { grid-area: 1 / 1 / 4 / 4; }
-.second-view { grid-area: 1 / 4 / 4 / 7; }
-.first-ops { grid-area: 4 / 1 / 5 / 4; }
-.second-ops { grid-area: 4 / 4 / 5 / 7; }
+.s-b-s-options { grid-area: 1 / 1 / 2 / 7; }
+.first-view { grid-area: 2 / 1 / 5 / 4; }
+.second-view { grid-area: 2 / 4 / 5 / 7; }

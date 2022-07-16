@@ -56,7 +56,7 @@ def render_content(tab):
     if tab == 'single-motif-view':
         return motifVisualisationTab()
     elif tab == 'multi-motif-view':
-        return compareBySideTab(app)
+        return compareBySideTab()
     elif tab == 'clustering':
         return html.H3('Look how cool our clusters are')
     elif tab == 'documentation':

@@ -73,7 +73,7 @@ Phosphosite dropdown menu
     Input('selected-psite-residue-types', 'value'),
     )
 def update_psite_dropdown(residues):
-    
+
     g1 = g.copy()
     return get_phosphosites(g1, residues)
 
@@ -87,9 +87,10 @@ Adjacency matrix plot
     Input('asa-threshold-slider', 'value'),
     Input('selected-psite-dropdown', 'value'),
     Input('axis-order-dropdown', 'value'),
+    Input('colour-dropdown', 'value')
     )
     
-def update_graph(radius, asa_threshold, psite, axis_order):
+def update_graph(radius, asa_threshold, psite, axis_order, colour):
     # Get new subgraph
     g1 = g.copy()
     
@@ -101,7 +102,7 @@ def update_graph(radius, asa_threshold, psite, axis_order):
     name = g.graph["name"]
     title = name.upper() + f""" STRUCTURAL MOTIF @ {psite}, threshold: {radius} Å
                                 <br>Surface accessibility threshold: {asa_threshold}"""
-    figure = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order)
+    figure = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order, colour=colour)
       
     return figure
 
@@ -115,7 +116,7 @@ def motifVisualisationTab ():
             html.H4('show graph with surface mesh here')
         ]),
         html.Div(className='options tab-component', children=[
-            html.H3('Phosphosite of interest:'),
+            html.H3('Select Phosphosite:'),
             dcc.Checklist(id='selected-psite-residue-types',
                 options=['SER', 'THR', 'TYR', 'HIS'],
                 value=['SER', 'THR', 'TYR'],
@@ -127,12 +128,29 @@ def motifVisualisationTab ():
                 value = psites[0],
                 style={'width': '80%'}
             ),
-            dcc.Dropdown(
-                id='axis-order-dropdown',
-                options=[{'label':"Sequence position", 'value': "seq"}, 
-                    {'label':"Hydrophobicity", 'value':"hydro"}],
-                value="hydro",
-                style={'width': '80%'}
+            html.Br(),
+            html.Div(children=[
+                html.H4('Order matrix by ', style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0'}),
+                dcc.Dropdown(
+                    id='axis-order-dropdown',
+                    options=[{'label':"Sequence position", 'value': "seq"}, 
+                        {'label':"Hydrophobicity", 'value':"hydro"}],
+                    value="hydro",
+                    style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0', 'width':'200px'}
+                )],
+                style={'height':'30px'}
+            ),
+            html.Br(),
+            html.Div(children=[
+                html.H4('Grayscale? ', style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0'}),
+                dcc.Dropdown(
+                    id='colour-dropdown',
+                    options=[{'label':"No", 'value': "viridis_r"}, 
+                        {'label':"Yes", 'value':"gray_r"}],
+                    value="viridis_r",
+                    style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0', 'width':'200px'}
+                )],
+                style={'height':'30px'}
             )
         ]),
         html.Div(

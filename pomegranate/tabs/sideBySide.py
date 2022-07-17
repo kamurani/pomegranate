@@ -52,9 +52,10 @@ Adjacency matrix plot
     Input('radius-threshold-slider', 'value'),
     Input('asa-threshold-slider', 'value'),
     Input('axis-order-dropdown', 'value'),
+    Input('colour-dropdown', 'value')
     )
     
-def update_graph(radius, asa_threshold, axis_order):
+def update_graph(radius, asa_threshold, axis_order, colour):
     
     # Get new subgraph
     g1 = g.copy()
@@ -66,7 +67,7 @@ def update_graph(radius, asa_threshold, axis_order):
     # update figure 
     name = g.graph["name"]
     title = name.upper() + f""" STRUCTURAL MOTIF @ {psite}"""
-    figure = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order)
+    figure = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order, colour=colour)
       
     return [figure, figure]
 
@@ -96,6 +97,14 @@ def compareBySideTab ():
                     options=[{'label':"Sequence position", 'value': "seq"}, 
                         {'label':"Hydrophobicity", 'value':"hydro"}],
                     value="hydro",
+                    style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0', 'width':'200px'}
+                ),
+                html.H4('Grayscale? ', style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0'}),
+                dcc.Dropdown(
+                    id='colour-dropdown',
+                    options=[{'label':"No", 'value': "viridis_r"}, 
+                        {'label':"Yes", 'value':"gray"}],
+                    value="viridis_r",
                     style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0', 'width':'200px'}
                 )],
                 style={'height':'30px'}

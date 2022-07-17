@@ -38,6 +38,7 @@ def motif_plot_distance_matrix(
     reverse_order: bool = False,
     title: Optional[str] = None,
     show_residue_labels: bool = True,
+    colour: Optional[str] = 'viridis_r'
 ) -> go.Figure:
     """Plots a distance matrix of the graph.
 
@@ -140,7 +141,7 @@ def motif_plot_distance_matrix(
             labels=dict(color="Distance"),
             title=title,
             template="plotly_dark",
-            color_continuous_scale="viridis_r",
+            color_continuous_scale=colour,
             
         )
     else:
@@ -149,7 +150,7 @@ def motif_plot_distance_matrix(
         else:
             tick_labels = []
         fig = sns.heatmap(
-            dist_mat, xticklabels=tick_labels, yticklabels=tick_labels
+            dist_mat, xticklabels=tick_labels, yticklabels=tick_labels, cmap=colour
         ).set(title=title)
 
     return fig

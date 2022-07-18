@@ -4,14 +4,14 @@ def help_text():
     return dcc.Markdown(''' 
 
 ## Need Help?
-
+---
 ### Welcome to POMEGRANATE!  
 
 POMEGRANATE is an interactive protein structural motif explorer which
 allows you to do many things including: 
 
-- Generating structural motifs of input proteins around a given phosphorylation site
-- Viewing structural motifs in colour with interactive information  
+> - Generating structural motifs of input proteins around a given phosphorylation site
+> - Viewing structural motifs in colour with interactive information  
 
 *(Add more info at each sprint)* 
 

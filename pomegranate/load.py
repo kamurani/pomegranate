@@ -104,7 +104,6 @@ def load_graphs(
 
         #print(index, row['acc'], row['position'], row['code'])
 
-        
         pdb_path = f"{pdb_dir}/{row['acc']}.pdb"
         g = construct_graph(config, pdb_path=pdb_path)   
         g = get_surface_motif(g, site=row['position']) # use default thresholds

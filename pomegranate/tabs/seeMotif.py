@@ -5,7 +5,9 @@ import pandas as pd
 import numpy as np
 
 from protein.phosphosite import *
-from protein.phosphosite import get_surface_motif  
+from protein.phosphosite import get_surface_motif
+
+from visualisation.plot import motif_asteroid_plot
 
 # Get data 
 # --------
@@ -83,13 +85,14 @@ Adjacency matrix plot
 '''
 @callback(
     Output('graph-adjacency-matrix', 'figure'),
+    Output('asteroid-plot', 'figure'),
     Input('radius-threshold-slider', 'value'),
     Input('asa-threshold-slider', 'value'),
     Input('selected-psite-dropdown', 'value'),
     Input('axis-order-dropdown', 'value'),
-    )
-    
-def update_graph(radius, asa_threshold, psite, axis_order):
+    )   
+
+def update_graphs(radius, asa_threshold, psite, axis_order):
     # Get new subgraph
     g1 = g.copy()
     
@@ -101,9 +104,21 @@ def update_graph(radius, asa_threshold, psite, axis_order):
     name = g.graph["name"]
     title = name.upper() + f""" STRUCTURAL MOTIF @ {psite}, threshold: {radius} Å
                                 <br>Surface accessibility threshold: {asa_threshold}"""
-    figure = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order)
-      
-    return figure
+    adj_mat = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order)
+    
+    # Update asteroid plot
+    ast_plt = motif_asteroid_plot(
+        g=g1,
+        node_id=psite,
+        size_nodes_by="rsa",
+        node_size_multiplier=80,
+        colour_nodes_by="hydrophobicity",
+        width=400,
+        height=400,
+        k=3
+    )
+
+    return [adj_mat, ast_plt]
 
 '''
 Layout
@@ -111,9 +126,7 @@ Layout
 def motifVisualisationTab ():
     return html.Div(className='single-motif-tab-content', children=[
         dcc.Graph(id='graph-adjacency-matrix', className='matrix-display tab-component'),
-        html.Div(className='graph-display tab-component', children=[
-            html.H4('show graph with surface mesh here')
-        ]),
+        dcc.Graph(id='asteroid-plot', className='graph-display tab-component'),
         html.Div(className='options tab-component', children=[
             html.H3('Phosphosite of interest:'),
             dcc.Checklist(id='selected-psite-residue-types',

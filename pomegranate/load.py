@@ -4,8 +4,9 @@
 
 """
 usage: python load.py ../datasets/yeast_full.txt structures/yeast-AF2
-
 """
+
+from protein.phosphosite import get_surface_motif
 
 
 import pathlib
@@ -105,8 +106,9 @@ def load_graphs(
 
         
         pdb_path = f"{pdb_dir}/{row['acc']}.pdb"
-        g = construct_graph(config, pdb_path=pdb_path)      
-        
+        g = construct_graph(config, pdb_path=pdb_path)   
+        g = get_surface_motif(g, site=row['position']) # use default thresholds
+        g.name += f" @ {row['position']}"
         graphs[index] = g
 
         print(f"Graph {graphs[index].name} at {index}")

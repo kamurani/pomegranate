@@ -118,7 +118,12 @@ def get_protein_graph(id=None, use_alphafold=True, config=None):
 Given graph ``g`` get subgraph within radius of psite, and surface residues above 
 ASA threshold. 
 '''
-def get_surface_motif(g=None, site=1, r=10, asa_threshold=0.5):
+def get_surface_motif(
+    g: nx.Graph = None, 
+    site: Union[int, str] = 1, 
+    r: float = 10.0, 
+    asa_threshold: float = 0.5,
+):
 
     
     s_g = get_protein_subgraph_radius(g=g, site=site, r=r)

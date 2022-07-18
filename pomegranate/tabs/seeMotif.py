@@ -37,9 +37,6 @@ Generate variables and use get_protein_graph
     Input('prot-input', 'value'),
 )
 def process_prot_input(db_name, prot_id):
-
-    # For AlphaFold and SwissProt
-    USE_ALPHAFOLD == True
     
     g = get_protein_graph(prot_id, config="asa", database=db_name)
     
@@ -111,7 +108,7 @@ Phosphosite dropdown menu
 def update_psite_dropdown(residues, graph):
 #def update_psite_dropdown(residues):
     
-    #g = json.loads(graph)
+    g = json.loads(graph)
     g1 = g.copy()
     return get_phosphosites(g1, residues)
 
@@ -231,7 +228,7 @@ def sidebarTab():
             dcc.Input(
                 id="prot-input",
                 type="text",
-                value="4hhb" # TODO: REMOVE THIS AFTER TESTING
+                value="4hhb", # TODO: REMOVE THIS AFTER TESTING
                 placeholder="Protein ID",
                 style={'width': '80%'},
                 debounce=True,

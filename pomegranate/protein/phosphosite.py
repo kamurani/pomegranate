@@ -86,6 +86,7 @@ def get_protein_graph(id=None, config=None, database='PDB'):
     protein_path = STRUCTURE_PATH + '/' + id + '.pdb'
     
     if database in ['AlphaFold', 'SWISS_PROT']:
+        #NOTE: Might have to remove SWISS_PROT. Not all SP have AF structures
         protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
 
 
@@ -97,7 +98,7 @@ def get_protein_graph(id=None, config=None, database='PDB'):
         g = construct_graph(config=config, pdb_path=protein_path)
     else:
         print(f"Retrieving {id}...")
-        g = construct_graph(config=config, pdb_code=id)
+        g = construct_graph(config=config, pdb_code=id)x
 
     
     # TODO: check if file exists and download if not. 

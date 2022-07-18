@@ -508,7 +508,7 @@ def motif_asteroid_plot(
     :type node_id: str
     :param k: Number of hops to plot. Defaults to ``2``.
     :type k: int
-    :param colour_nodes_by: Colour the nodes by this attribute. Currently only ``"shell"`` is supported.
+    :param colour_nodes_by: Colour the nodes by this attribute. 
     :type colour_nodes_by: str
 
 

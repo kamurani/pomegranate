@@ -2,6 +2,12 @@
 """Load graphs from list of PDB files"""
 
 
+"""
+usage: python load.py ../datasets/yeast_full.txt structures/yeast-AF2
+
+"""
+
+
 import pathlib
 from graphein.protein.graphs import construct_graph
 from graphein.protein.config import ProteinGraphConfig

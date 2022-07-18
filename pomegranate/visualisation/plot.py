@@ -500,7 +500,7 @@ def motif_asteroid_plot(
 ) -> Union[plotly.graph_objects.Figure, matplotlib.figure.Figure]:
     """Plots a k-hop subgraph around a node as concentric shells.
 
-    Radius of each point is proportional to the degree of the node (modified by node_size_multiplier).
+    Radius of each point is proportional to a node attribute, with degree as default. (modified by node_size_multiplier).
 
     :param g: NetworkX graph to plot.
     :type g: nx.Graph

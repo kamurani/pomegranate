@@ -672,7 +672,7 @@ def motif_asteroid_plot(
             textposition="bottom center",
             showlegend=False,
             marker=dict(
-                colorscale="YlGnBu",
+                colorscale="viridis",
                 reversescale=True,
                 color=node_colours,
                 size=node_sizes, 

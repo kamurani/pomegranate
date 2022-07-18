@@ -650,8 +650,10 @@ def motif_asteroid_plot(
             for n in subgraph.nodes():
                 for k, v in nodes.items():
                     if n in v:
-                        node_colours.append(k)
+                        print(f"n: {n}")
+                        node_colours.append(aa2hydrophobicity(n.split(':')[1]))
         
+        # TODO
         elif colour_nodes_by == "residue_name":
             node_colours = []
             for n in subgraph.nodes():
@@ -673,10 +675,10 @@ def motif_asteroid_plot(
                 colorscale="YlGnBu",
                 reversescale=True,
                 color=node_colours,
-                size=node_sizes, # TODO size by RSA / ASA
+                size=node_sizes, 
                 colorbar=dict(
                     thickness=15,
-                    title="Shell",
+                    title=str.capitalize(colour_nodes_by),
                     tickvals=list(range(k)),
                     xanchor="left",
                     titleside="right",
@@ -708,4 +710,37 @@ def motif_asteroid_plot(
         return fig
     else:
         nx.draw_shell(subgraph, nlist=shells, with_labels=show_labels)
+
+
+"""
+Get hydrophobicity map
+"""
+def aa2hydrophobicity(
+    aa: str,
+    mapping : str = 'a',
+    ):
+    if mapping == 'a':
+        hmap = { 
+            "ILE" : 4.5,
+            "VAL" : 4.2,
+            "LEU" : 3.8,
+            "PHE" : 2.8,
+            "CYS" : 2.5,
+            "MET" : 1.9,
+            "ALA" : 1.8,
+            "GLY" : -0.4,
+            "THR" : -0.7,
+            "SER" : -0.8,
+            "TRP" : -0.9,
+            "TYR" : -1.3,
+            "PRO" : -1.6,
+            "HIS" : -3.2,
+            "GLU" : -3.5,
+            "GLN" : -3.5,
+            "ASP" : -3.5,
+            "ASN" : -3.5,
+            "LYS" : -3.9,
+            "ARG" : -4.5,
+        }
+    return hmap[aa]
 

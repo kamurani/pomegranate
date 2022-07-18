@@ -140,7 +140,11 @@ def get_surface_motif(g=None, site=1, r=10, asa_threshold=0.5):
 '''
 Given a graph ``g`` get a subgraph from radius and known phos site
 '''
-def get_protein_subgraph_radius(g=None, site=1, r=10):
+def get_protein_subgraph_radius(
+    g: nx.Graph = None, 
+    site: Union[int, str] = 1, 
+    r: float = 10.0,
+):
    
     if isinstance(site, str):
         try:

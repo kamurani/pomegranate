@@ -273,6 +273,8 @@ def main(
     ):
 
     # TODO: ensure that psite is always included; regardless of RSA
+    # TODO: might be multiple identical graphs (i.e. only different thing in entry is the kinase)
+    # have option to only count unique graphs.  Or utilise different entries. 
 
     graph_path = Path(graphs)
 

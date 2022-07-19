@@ -9,6 +9,9 @@ from dash import Dash, dcc, html, Input, Output
 from tabs.seeMotif import motifVisualisationTab
 from help_tab import help_text
 
+import dash_bootstrap_components as dbc
+import dash_loading_spinners as dls
+
 PROTEIN_ID = "default"
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -46,12 +49,10 @@ content = html.Div(
 app.layout = html.Div([
     html.Img(src=app.get_asset_url('imgs/POMEGRANATE-LOGO.png'), style={'width': '40%'}),
     html.H2('PhOsphosite Motif Explorer -- GRAph Network Abstraction Through Embeddings'),
-    html.Div(id="content-grid", children=[sidebar,content])
-    
+    html.Div(id="content-grid", children=[sidebar,content]),
 ])
 
-@app.callback(Output('tab-container', 'children'),
-              Input('tab-options', 'value'))
+@app.callback(Output('tab-container', 'children'), Input('tab-options', 'value'))
 def render_content(tab):
     if tab == 'single-motif-view':
         return motifVisualisationTab()

@@ -105,6 +105,13 @@ def update_graph(radius, asa_threshold, psite, axis_order):
       
     return figure
 
+
+#layout = html.Div(dls.Hash(dcc.Graph(id="loading-output",),
+ #            color="#435278",
+  #           speed_multiplier=2,
+   #          size=100,
+    #         fullscreen=True,
+     #       ),)
 '''
 Layout
 '''
@@ -151,5 +158,5 @@ def motifVisualisationTab ():
                         included=True, # show trail
                         id='asa-threshold-slider'
                 )
-            ])
+            ]), 
     ])

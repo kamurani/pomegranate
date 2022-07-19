@@ -18,6 +18,17 @@ allows you to do many things including:
 
 ***
 
+## Contents:
+
+1. [Input](##-1.-Input)
++ 1.1 [Protein](-1.1-protein)
++ 1.2 [Phosphosite](-1.2-phosphosite)
+2. [Viewing Structural Motifs](##-2.-Viewing-Structural-Motifs)
++ 2.1 [Simple Graph](###-2.1-Simple-Graph)
+3. [Comparing Structural Motifs](##-3.-Comparing-Structural-Motifs)
+
+***
+
 ## 1. Input
 
 There are 3 different elements of input required to generate the structural motif: the protein, the specific  

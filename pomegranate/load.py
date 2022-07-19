@@ -40,7 +40,7 @@ def load_graphs(
     pdb_path: str = None,       # directory containing local pdb files
     psite_list: str = None,          # path to file containing list of psites
     radius_threshold: float = 10.0,
-    rsa_threshold: float = 0.8,
+    rsa_threshold: float = 0.0,
 ):
 
     psite_path = Path(psite_list)
@@ -101,19 +101,42 @@ def load_graphs(
         dssp_config=DSSPConfig(),
         pdb_dir=pdb_dir,
     )
-    for index, row in df.iterrows():
+    for idx, row in df.iterrows():
 
         #print(index, row['acc'], row['position'], row['code'])
+        if type(row['kinases']) == str:
+            kinase = row['kinases']
+        else:
+            kinase = "UNKNOWN"
+        #print(f"row kinase: {type(row['kinases'])}")
+        index = idx
+        #if True:
         try:
+            pos = row['position'] 
             pdb_path = f"{pdb_dir}/{row['acc']}.pdb"
-            g = construct_graph(config, pdb_path=pdb_path)   
-            g = get_surface_motif(g, site=row['position']) # use default thresholds
-            g.name += f" @ {row['position']}"
-            graphs[index] = g
+            g = construct_graph(config, pdb_path=pdb_path) 
+            
+            res = list(g.nodes())[pos-1]
 
-            print(f"Graph {graphs[index].name} at {index}")
+            psite = g.nodes(data=True)[res]
+
+            g = get_surface_motif(g, site=pos) # use default thresholds
+            
+            g.name += f" @ {row['position']} {row['code']}"
+
+
+            graph = {'graph': g, 'kinase': kinase, 'psite': psite, 'res': res}
+            graphs[index] = graph
+
+            
+            print(f"[{index}] Graph {graphs[index]['graph'].name}, RES: {res}")
+            
+
+        #else:
         except:
-            graphs[index] = None
+
+            print(f"[FAILED] Graph")
+            
             
 
     return graphs
@@ -151,7 +174,7 @@ def load_graphs(
     "--rsa-threshold",
     help="The RSA threshold of the motif",
     type=float,
-    default=0.5,
+    default=0.0,
 )
 def main(
     phosphosite, 
@@ -160,6 +183,8 @@ def main(
     radius,
     rsa,
     ):
+
+    # TODO: ensure that psite is always included; regardless of RSA
 
     graph_path = Path(graphs)
     if not graph_path.is_dir():
@@ -181,7 +206,7 @@ def main(
         rsa_threshold=rsa,
     )
 
-    print(f"Loaded {len(graphs)} graphs with radius {radius} and RSA {rsa}.")
+    print(f"Loaded {len(graphs.keys())} graphs with radius {radius} and RSA {rsa}.")
     
     # Save graphs to file
     print("Saving graphs...")

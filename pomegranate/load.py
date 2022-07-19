@@ -6,10 +6,13 @@
 usage: python load.py ../datasets/yeast_full.txt structures/yeast-AF2 saved_graphs
 """
 
-import pickle
+
+
+# Pomegranate
 from protein.phosphosite import get_surface_motif
+from validate import get_database
 
-
+import pickle
 import pathlib
 from graphein.protein.graphs import construct_graph
 from graphein.protein.config import ProteinGraphConfig
@@ -41,7 +44,12 @@ def load_graphs(
     psite_list: str = None,          # path to file containing list of psites
     radius_threshold: float = 10.0,
     rsa_threshold: float = 0.0,
+    verbose: bool = True,
+    debug: bool = True,
 ):
+
+    if debug:
+        verbose = True
 
     psite_path = Path(psite_list)
     if not psite_path.is_file():
@@ -67,17 +75,33 @@ def load_graphs(
 
         filename = f"{pdb_path}/{acc}.pdb" 
         
-        if not os.path.exists(filename):
+        if os.path.exists(filename):
+            if verbose:
+                print(f"{filename} already exists.")
+
+        else:
 
             #print(f"No such file {filename}")
-            print(f"Downloading {acc} from AF2...")
+            
 
             filename = acc + ".pdb"
-            url = f"https://alphafold.ebi.ac.uk/files/AF-{acc}-F1-model_v2.pdb"
 
-            ul.request.urlretrieve(url, pdb_path+f"/{filename}")
-    
-    
+            if get_database(acc) == 'uniprot':
+                print(f"Downloading {acc} from AF2...", end=" ")
+                try:
+                    url = f"https://alphafold.ebi.ac.uk/files/AF-{acc}-F1-model_v2.pdb"
+                    ul.request.urlretrieve(url, pdb_path+f"/{filename}")
+                    if verbose:
+                        print("DOWNLOADED.")
+                except:
+                    if verbose:
+                        print(f"FAILED to download from AF2.")
+            else:
+                if verbose:
+                    print(f"Skipping non-uniprot ID '{acc}'.")
+        
+        
+
         # Phosphosite 
         #subgraph = 
     pdb_dir = pdb_path 
@@ -104,6 +128,10 @@ def load_graphs(
     for idx, row in df.iterrows():
 
         #print(index, row['acc'], row['position'], row['code'])
+        acc         = row['acc']
+        pos         = row['position'] 
+        res_code    = row['code']
+
         if type(row['kinases']) == str:
             kinase = row['kinases']
         else:
@@ -111,31 +139,39 @@ def load_graphs(
         #print(f"row kinase: {type(row['kinases'])}")
         index = idx
         #if True:
-        try:
-            pos = row['position'] 
-            pdb_path = f"{pdb_dir}/{row['acc']}.pdb"
-            g = construct_graph(config, pdb_path=pdb_path) 
-            
-            res = list(g.nodes())[pos-1]
+        
+        
+        pdb_path = f"{pdb_dir}/{acc}.pdb"
 
-            psite = g.nodes(data=True)[res]
+        path = Path(pdb_path)
+        if not path.is_file():
+            if verbose:
+                print(f"[{index}] No structure file {pdb_path}.  Skipping...")
+        else:
+            if verbose:
+                print(f"[{index}] Constructing graph from {acc}...", end=" ")
 
-            g = get_surface_motif(g, site=pos) # use default thresholds
-            
-            g.name += f" @ {row['position']} {row['code']}"
+            try:
+                g = construct_graph(config, pdb_path=pdb_path) 
+                res = list(g.nodes())[pos-1]
 
+                psite = g.nodes(data=True)[res]
+                g = get_surface_motif(g, site=pos) # use default thresholds
+                g.name += f" @ {pos} {res_code}"
 
-            graph = {'graph': g, 'kinase': kinase, 'psite': psite, 'res': res}
-            graphs[index] = graph
-
-            
-            print(f"[{index}] Graph {graphs[index]['graph'].name}, RES: {res}")
-            
-
-        #else:
-        except:
-
-            print(f"[FAILED] Graph")
+                graph = {'graph': g, 'kinase': kinase, 'psite': psite, 'res': res}
+                graphs[index] = graph
+                if verbose:
+                    print(f"DONE.", end=" ")
+                if debug:
+                    print(f"Graph {graphs[index]['graph'].name}, psite: {res}", end = "")
+                if verbose:
+                    print()
+                
+            except:
+                graphs[index] = None
+                if verbose:
+                    print(f"FAILED.")
             
             
 

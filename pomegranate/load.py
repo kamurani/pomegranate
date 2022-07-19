@@ -89,6 +89,8 @@ def load_graphs(
             if verbose:
                 print("Exiting...", end=" ")
             exit
+        if verbose:
+            print()
         
         
     else:
@@ -184,11 +186,10 @@ def load_graphs(
                 graphs[index] = graph
                 
                 stats['num_success'] += 1
-                if verbose:
-                    print(f"DONE.", end=" ")
+                
                 if debug:
                     print(f"[{index}] Constructing graph from {acc}...", end=" ")
-                    print(f"Graph {graphs[index]['graph'].name}, psite: {res}", end="")
+                    print(f"DONE.  Graph {graphs[index]['graph'].name}, psite: {res}", end="")
                 if verbose:
                     print("")
                 
@@ -277,6 +278,9 @@ def main(
 
     if graph_path.is_file():
         out_path = graph_path
+
+        # TODO: check for overwrite if file exists.  Prompt. 
+        # '--force, -f' flag to overwrite. 
     elif graph_path.is_dir():
         filename = "graph_objects"
         out_path = os.path.join(graph_path, filename)
@@ -284,8 +288,6 @@ def main(
         raise ValueError(f"No such directory {graph_path}")
     
      
-    
-
     # TODO: check if filename exists.  Prompt for new one / overwrite. 
 
     print(f"Output file is {out_path}.")
@@ -303,25 +305,16 @@ def main(
     print(f"Created {len(graphs.values())} graphs with radius {radius} and RSA {rsa}")
 
     # Save graphs to file
-    print("Saving graphs...", end=" ")
+    print(f"Saving graphs to {out_path} ...", end=" ")
     outfile =  open(out_path, 'wb')
     pickle.dump(graphs, outfile)
     outfile.close()
     print("DONE.")
 
+
+
     return
 
-    # Unpickle
-    infile = open(in_path,'rb')
-    loaded_graphs = pickle.load(infile)
-    infile.close()
-
-
-
-
-    
-
-
-
+ 
 if __name__ == "__main__":
     main()

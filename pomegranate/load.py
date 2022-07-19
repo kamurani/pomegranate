@@ -274,12 +274,17 @@ def main(
     # TODO: ensure that psite is always included; regardless of RSA
 
     graph_path = Path(graphs)
-    if not graph_path.is_dir():
+
+    if graph_path.is_file():
+        out_path = graph_path
+    elif graph_path.is_dir():
+        filename = "graph_objects"
+        out_path = os.path.join(graph_path, filename)
+    else:
         raise ValueError(f"No such directory {graph_path}")
     
      
-    filename = "graph_objects"
-    out_path = os.path.join(graph_path, filename)
+    
 
     # TODO: check if filename exists.  Prompt for new one / overwrite. 
 
@@ -297,9 +302,6 @@ def main(
 
     print(f"Created {len(graphs.values())} graphs with radius {radius} and RSA {rsa}")
 
-    # Stats 
-
-    
     # Save graphs to file
     print("Saving graphs...", end=" ")
     outfile =  open(out_path, 'wb')

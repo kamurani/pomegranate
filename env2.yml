@@ -1,0 +1,7 @@
+name: motifs_py37
+dependencies:
+  - python=3.7
+  - pandas
+  - numpy
+
+

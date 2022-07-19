@@ -59,7 +59,7 @@ def get_protein_graph(id=None, config=None, database='PDB'):
     
     # Graph configuration
     if not config:
-        config = ProteinGraphConfig()   # default
+        config = ProteinGraphConfig()   # default graph config file from graphein
     
     if config in ["asa", "rsa"]:
 
@@ -75,30 +75,38 @@ def get_protein_graph(id=None, config=None, database='PDB'):
             add_peptide_bonds
             ]
 
+        # Use structure path of already downloaded PDB file (if it exists) for DSSP calculation.
+        pdb_path = STRUCTURE_PATH + '/' + id + '.pdb'
+
         from graphein.protein.config import DSSPConfig
         from graphein.protein.features.nodes import rsa
         config = ProteinGraphConfig(edge_construction_functions=edge_fns, 
                                     graph_metadata_functions=[rsa], 
-                                    dssp_config=DSSPConfig()
-        )
-
-
-    protein_path = STRUCTURE_PATH + '/' + id + '.pdb'
+                                    dssp_config=DSSPConfig(),
+                                    pdb_path=pdb_path,
+        )   
     
+
+    protein_path = id + '.pdb'
+
     if database in ['AlphaFold', 'SWISS_PROT']:
         #NOTE: Might have to remove SWISS_PROT. Not all SP have AF structures
         protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
 
-
+    # if use_alphafold:
+    #     pdb_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
    
     # TODO: separate structures into alphafold / pdb. 
     # Check if this file has been downloaded before.
+    # if os.path.isfile(pdb_path):
+    #     print(f"Using local PDB file for {id}.")
+    #     g = construct_graph(config=config, pdb_path=pdb_path)
     if os.path.isfile(protein_path):
         print(f"Using local file for {id}.")
         g = construct_graph(config=config, pdb_path=protein_path)
     else:
         print(f"Retrieving {id}...")
-        g = construct_graph(config=config, pdb_code=id)x
+        g = construct_graph(config=config, pdb_code=id)
 
     
     # TODO: check if file exists and download if not. 

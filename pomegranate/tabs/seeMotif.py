@@ -3,10 +3,12 @@ from dash import Dash, dcc, html, callback, Input, Output, dependencies
 import plotly.express as px
 import pandas as pd
 import numpy as np
+import networkx.readwrite as nx
 import json
 
 from protein.phosphosite import *
-from protein.phosphosite import get_surface_motif  
+from protein.phosphosite import get_surface_motif
+from json_conversion.graphein_to_json import g_to_json  
 
 # Get data 
 # --------
@@ -39,22 +41,27 @@ Generate variables and use get_protein_graph
 def process_prot_input(db_name, prot_id):
     
     g = get_protein_graph(prot_id, config="asa", database=db_name)
-    
+    inter_val = g_to_json(g)
     #return graph in json format
-    return json.dumps(g)
+    #print(f"inter_val type is {type(inter_val)}")
+    #print(f"inter_val dump type is {type(json.dumps(inter_val))}")
+    return json.dumps(inter_val)
 
 '''
 Generate psites
 '''
 @callback(
     Output('intermediate-value-psites', 'data'),
-    Input('intermediate-value-prot', 'data'),
+    Input('intermediate-value-prot', 'children'),
+    Input('selected-psite-residue-types', 'value')
 )
-def process_psite(graph):
-
-    g = json.loads(graph)
-    psites = get_phosphosites(g)
-    return json.dumps(psite)
+def process_psite(graph, sites):
+    #print(f"Process psite 'graph' type is {type(graph)}")
+    tmp = json.loads(graph)
+    g = nx.json_graph.node_link_graph(tmp)
+    #print(f"Process psite 'g' (graph loads) type is {type(g)}")
+    psites = get_phosphosites(g, sites)
+    return json.dumps(psites)
 # TODO: add slider for ASA threshold (subgraph selection)
 
 
@@ -100,18 +107,30 @@ def update_selected_psite(value):
 '''
 Phosphosite dropdown menu
 '''
+# @callback(
+#     Output('selected-psite-dropdown', 'options'),
+#     Input('selected-psite-residue-types', 'value'),
+#     Input('intermediate-value-prot', 'children'),
+#     )
+# def update_psite_dropdown(residues, graph):
+# #def update_psite_dropdown(residues):
+    
+#     tmp = json.loads(graph)
+#     g = nx.json_graph.node_link_graph(tmp)
+#     g1 = g.copy()
+#     return get_phosphosites(g1, residues)
 @callback(
     Output('selected-psite-dropdown', 'options'),
     Input('selected-psite-residue-types', 'value'),
-    Input('intermediate-value-prot', 'data'),
+    Input('intermediate-value-psites', 'data'),
     )
-def update_psite_dropdown(residues, graph):
-#def update_psite_dropdown(residues):
-    
-    g = json.loads(graph)
-    g1 = g.copy()
-    return get_phosphosites(g1, residues)
-
+def update_psite_dropdown(residues, psites):
+    tmp = psites.replace('\"', '')
+    tmp = tmp.replace('[', '')
+    tmp = tmp.replace(']', '')
+    options = list(tmp.split(","))
+    print(f"phos dropdown options type is {type(options)}")
+    return options
 
 '''
 Adjacency matrix plot
@@ -122,13 +141,15 @@ Adjacency matrix plot
     Input('asa-threshold-slider', 'value'),
     Input('selected-psite-dropdown', 'value'),
     Input('axis-order-dropdown', 'value'),
-    Input ('intermediate-value-prot', 'data'),
+    Input ('intermediate-value-prot', 'children'),
     )   
     
 def update_graph(radius, asa_threshold, psite, axis_order, graph):
 #def update_graph(radius, asa_threshold, psite, axis_order):
     # Get new subgraph
-    g = json.loads(graph)
+    print(f"inter psite type is {type(psite)}")
+    tmp = json.loads(graph)
+    g = nx.json_graph.node_link_graph(tmp)
     g1 = g.copy()
     
     if not psite:
@@ -142,6 +163,7 @@ def update_graph(radius, asa_threshold, psite, axis_order, graph):
     figure = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order)
       
     return figure
+
 
 '''
 Process Protein Input
@@ -166,8 +188,8 @@ def motifVisualisationTab ():
             ),
             dcc.Dropdown(
                 id='selected-psite-dropdown',
-                options=[{'label':site, 'value':site} for site in psites],
-                value = psites[0],
+                # options=[{'label':site, 'value':site} for site in psites],
+                # value = psites[0],
                 style={'width': '80%'}
             ),
             dcc.Dropdown(

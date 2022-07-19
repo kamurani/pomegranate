@@ -113,7 +113,7 @@ def update_graphs(radius, asa_threshold, psite, axis_order):
         size_nodes_by="rsa",
         node_size_multiplier=80,
         colour_nodes_by="hydrophobicity",
-        width=400,
+        width=435,
         height=400,
         k=3
     )

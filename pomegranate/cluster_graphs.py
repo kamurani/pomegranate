@@ -106,7 +106,8 @@ def main(
 
     in_path = graph_path
 
-    save_path = os.path.join(graph_path, "embeddings")
+    parent = os.path.dirname(in_path)
+    save_path = os.path.join(parent, "embeddings")
 
     print(f"Input file is {in_path}.")
 
@@ -172,7 +173,7 @@ def main(
     generator = sg.mapper.PaddedGraphGenerator(graphs)
 
     gc_model = sg.layer.GCNSupervisedGraphClassification(
-        [8, 4], ["relu", "relu"], generator, pool_all_layers=True
+        [16, 8], ["relu", "relu"], generator, pool_all_layers=True
     )
     inp1, out1 = gc_model.in_out_tensors()
     inp2, out2 = gc_model.in_out_tensors()
@@ -211,7 +212,7 @@ def main(
     outfile =  open(save_path, 'wb')
     pickle.dump(embeddings, outfile)
     outfile.close()
-    print(f"Saved embeddings at {outfile}.")
+    print(f"Saved embeddings at {save_path}.")
 
 
 

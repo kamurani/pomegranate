@@ -3,5 +3,5 @@ dependencies:
   - python=3.7
   - pandas
   - numpy
-
+  - tensorflow>=2.1.0
 

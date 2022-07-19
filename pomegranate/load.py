@@ -3,9 +3,10 @@
 
 
 """
-usage: python load.py ../datasets/yeast_full.txt structures/yeast-AF2
+usage: python load.py ../datasets/yeast_full.txt structures/yeast-AF2 saved_graphs
 """
 
+import pickle
 from protein.phosphosite import get_surface_motif
 
 
@@ -85,13 +86,13 @@ def load_graphs(
     graphs = {}
 
     edge_fns = [
-            add_aromatic_interactions,
+            #add_aromatic_interactions,
             add_hydrophobic_interactions,
-            add_aromatic_sulphur_interactions,
-            add_cation_pi_interactions,
-            add_disulfide_interactions,
-            add_hydrogen_bond_interactions,
-            add_ionic_interactions,
+            #add_aromatic_sulphur_interactions,
+            #add_cation_pi_interactions,
+            #add_disulfide_interactions,
+            #add_hydrogen_bond_interactions,
+            #add_ionic_interactions,
             add_peptide_bonds
         ]
     config = ProteinGraphConfig(
@@ -103,16 +104,19 @@ def load_graphs(
     for index, row in df.iterrows():
 
         #print(index, row['acc'], row['position'], row['code'])
+        try:
+            pdb_path = f"{pdb_dir}/{row['acc']}.pdb"
+            g = construct_graph(config, pdb_path=pdb_path)   
+            g = get_surface_motif(g, site=row['position']) # use default thresholds
+            g.name += f" @ {row['position']}"
+            graphs[index] = g
 
-        pdb_path = f"{pdb_dir}/{row['acc']}.pdb"
-        g = construct_graph(config, pdb_path=pdb_path)   
-        g = get_surface_motif(g, site=row['position']) # use default thresholds
-        g.name += f" @ {row['position']}"
-        graphs[index] = g
+            print(f"Graph {graphs[index].name} at {index}")
+        except:
+            graphs[index] = None
+            
 
-        print(f"Graph {graphs[index].name} at {index}")
-
-    return
+    return graphs
 
 
 '''
@@ -134,6 +138,7 @@ def load_graphs(
 @c.command()
 @c.argument('phosphosite', nargs=1)
 @c.argument('structures', nargs=1)
+@c.argument('graphs', nargs=1)
 @c.option(
     "-r",
     "--radius",
@@ -151,17 +156,53 @@ def load_graphs(
 def main(
     phosphosite, 
     structures,
+    graphs,
     radius,
     rsa,
-
     ):
+
+    graph_path = Path(graphs)
+    if not graph_path.is_dir():
+        raise ValueError(f"No such directory {graph_path}")
     
-    load_graphs(
+     
+    filename = "graph_objects"
+    out_path = os.path.join(graph_path, filename)
+
+    # TODO: check if filename exists.  Prompt for new one / overwrite. 
+
+    print(f"Output file is {out_path}.")
+    
+
+    graphs = load_graphs(
         pdb_path = structures,
         psite_list = phosphosite,
         radius_threshold=radius,
         rsa_threshold=rsa,
     )
+
+    print(f"Loaded {len(graphs)} graphs with radius {radius} and RSA {rsa}.")
+    
+    # Save graphs to file
+    print("Saving graphs...")
+    outfile =  open(out_path, 'wb')
+    pickle.dump(graphs, outfile)
+    outfile.close()
+    print("DONE.")
+
+    return
+
+    # Unpickle
+    infile = open(in_path,'rb')
+    loaded_graphs = pickle.load(infile)
+    infile.close()
+
+
+
+
+    
+
+
 
 if __name__ == "__main__":
     main()

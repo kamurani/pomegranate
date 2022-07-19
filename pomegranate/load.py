@@ -6,7 +6,7 @@
 usage: python load.py ../datasets/yeast_full.txt structures/yeast-AF2 saved_graphs
 """
 
-
+import re
 
 # Pomegranate
 from protein.phosphosite import get_surface_motif
@@ -44,8 +44,11 @@ def load_graphs(
     psite_list: str = None,          # path to file containing list of psites
     radius_threshold: float = 10.0,
     rsa_threshold: float = 0.0,
+    download: bool = True,
+    num_psites: int = 1000, # Make 1000 graphs as default
     verbose: bool = True,
     debug: bool = True,
+    
 ):
 
     if debug:
@@ -70,42 +73,58 @@ def load_graphs(
     if not os.path.isdir(pdb_path):
         raise ValueError(f"Path {pdb_path} is not a directory.")
     
-    # for each entry: 
-    for acc in accs:
+    if not download:
+        if verbose:
+            print(f"Skipping downloading.  Using {pdb_path} as structure directory...", end=" ")
 
-        filename = f"{pdb_path}/{acc}.pdb" 
+        filenames = os.listdir(pdb_path)
+        num_matches = 0 
+        for f in filenames:
+            if re.search(".pdb$", f):
+                num_matches += 1
+        if verbose:
+            print(f"Found {num_matches} PDB files.", end=" ")
         
-        if os.path.exists(filename):
+        if num_matches == 0:
             if verbose:
-                print(f"{filename} already exists.")
+                print("Exiting...", end=" ")
+            exit
+        
+        
+    else:
+        # for each entry: 
+        for acc in accs:
 
-        else:
-
-            #print(f"No such file {filename}")
-            
-
-            filename = acc + ".pdb"
-
-            if get_database(acc) == 'uniprot':
-                print(f"Downloading {acc} from AF2...", end=" ")
-                try:
-                    url = f"https://alphafold.ebi.ac.uk/files/AF-{acc}-F1-model_v2.pdb"
-                    ul.request.urlretrieve(url, pdb_path+f"/{filename}")
-                    if verbose:
-                        print("DOWNLOADED.")
-                except:
-                    if verbose:
-                        print(f"FAILED to download from AF2.")
-            else:
+            filename = f"{pdb_path}/{acc}.pdb" 
+            if os.path.exists(filename):
                 if verbose:
-                    print(f"Skipping non-uniprot ID '{acc}'.")
-        
-        
+                    print(f"{filename} already exists.")
 
+            else:
+
+                #print(f"No such file {filename}")
+                
+
+                filename = acc + ".pdb"
+
+                if get_database(acc) == 'uniprot':
+                    print(f"Downloading {acc} from AF2...", end=" ")
+                    try:
+                        url = f"https://alphafold.ebi.ac.uk/files/AF-{acc}-F1-model_v2.pdb"
+                        ul.request.urlretrieve(url, pdb_path+f"/{filename}")
+                        if verbose:
+                            print("DOWNLOADED.")
+                    except:
+                        if verbose:
+                            print(f"FAILED to download from AF2.")
+                else:
+                    if verbose:
+                        print(f"Skipping non-uniprot ID '{acc}'.")
+        
+        
         # Phosphosite 
         #subgraph = 
     pdb_dir = pdb_path 
-
     # Each phosphosite
     graphs = {}
 
@@ -125,6 +144,8 @@ def load_graphs(
         dssp_config=DSSPConfig(),
         pdb_dir=pdb_dir,
     )
+
+    stats = dict(num_fail=0, num_success=0, num_skip=0)
     for idx, row in df.iterrows():
 
         #print(index, row['acc'], row['position'], row['code'])
@@ -142,15 +163,15 @@ def load_graphs(
         
         
         pdb_path = f"{pdb_dir}/{acc}.pdb"
-
         path = Path(pdb_path)
         if not path.is_file():
+            stats['num_skip'] += 1
             if verbose:
-                print(f"[{index}] No structure file {pdb_path}.  Skipping...")
+                print(f"[{index}] No structure file {pdb_path} -- Skipping...")
         else:
             if verbose:
                 print(f"[{index}] Constructing graph from {acc}...", end=" ")
-
+            
             try:
                 g = construct_graph(config, pdb_path=pdb_path) 
                 res = list(g.nodes())[pos-1]
@@ -161,19 +182,35 @@ def load_graphs(
 
                 graph = {'graph': g, 'kinase': kinase, 'psite': psite, 'res': res}
                 graphs[index] = graph
+                
+                stats['num_success'] += 1
                 if verbose:
                     print(f"DONE.", end=" ")
                 if debug:
-                    print(f"Graph {graphs[index]['graph'].name}, psite: {res}", end = "")
+                    print(f"[{index}] Constructing graph from {acc}...", end=" ")
+                    print(f"Graph {graphs[index]['graph'].name}, psite: {res}", end="")
                 if verbose:
-                    print()
+                    print("")
                 
             except:
                 graphs[index] = None
+                stats['num_fail'] += 1
                 if verbose:
                     print(f"FAILED.")
+        
+        # Exit if we have reached N graphs
+        if stats['num_success'] >= num_psites:
+            break
             
-            
+    # Print stats      
+    if verbose:
+        print("STATISTICS")
+        print("----------")
+        print(f"{idx+1} phosphosites examined")
+        print(f"{stats['num_skip']} graphs skipped")
+        print(f"{stats['num_success']} graphs successfully constructed")
+        print(f"{stats['num_fail']} graph constructions failed")
+        print("")
 
     return graphs
 
@@ -199,6 +236,18 @@ def load_graphs(
 @c.argument('structures', nargs=1)
 @c.argument('graphs', nargs=1)
 @c.option(
+    "--download/--skip-download",
+    help="Skip downloading protein structures into the supplied directory.  If the required structure does not exist, graph construction for that accession ID will be skipped.",
+    default=True,
+)
+@c.option(
+    "-N",
+    "--num-psites",
+    help="Only consider the first N motifs in a dataset.  Graph construction will continue until N graphs are made, or the end of the dataset is reached.",
+    type=int,
+    default=10, # TODO: don't use this default value
+)
+@c.option(
     "-r",
     "--radius",
     help="The threshold radius of the motif",
@@ -216,6 +265,8 @@ def main(
     phosphosite, 
     structures,
     graphs,
+    download,
+    num_psites,
     radius,
     rsa,
     ):
@@ -240,12 +291,17 @@ def main(
         psite_list = phosphosite,
         radius_threshold=radius,
         rsa_threshold=rsa,
+        num_psites=num_psites,
+        download=download,
     )
 
-    print(f"Loaded {len(graphs.keys())} graphs with radius {radius} and RSA {rsa}.")
+    print(f"Created {len(graphs.values())} graphs with radius {radius} and RSA {rsa}")
+
+    # Stats 
+
     
     # Save graphs to file
-    print("Saving graphs...")
+    print("Saving graphs...", end=" ")
     outfile =  open(out_path, 'wb')
     pickle.dump(graphs, outfile)
     outfile.close()

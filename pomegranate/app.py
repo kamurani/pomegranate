@@ -9,8 +9,7 @@ from dash import Dash, dcc, html, Input, Output
 from tabs.seeMotif import motifVisualisationTab
 from help_tab import help_text
 
-import dash_bootstrap_components as dbc
-import dash_loading_spinners as dls
+
 
 PROTEIN_ID = "default"
 

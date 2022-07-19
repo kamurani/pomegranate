@@ -7,6 +7,9 @@ import numpy as np
 from protein.phosphosite import *
 from protein.phosphosite import get_surface_motif  
 
+import dash_bootstrap_components as dbc
+import dash_loading_spinners as dls
+
 # Get data 
 # --------
 
@@ -105,19 +108,22 @@ def update_graph(radius, asa_threshold, psite, axis_order):
       
     return figure
 
-
-#layout = html.Div(dls.Hash(dcc.Graph(id="loading-output",),
- #            color="#435278",
-  #           speed_multiplier=2,
-   #          size=100,
-    #         fullscreen=True,
-     #       ),)
 '''
 Layout
 '''
 def motifVisualisationTab ():
     return html.Div(className='single-motif-tab-content', children=[
-        dcc.Graph(id='graph-adjacency-matrix', className='matrix-display tab-component'),
+        html.Div(
+            className='matrix-display tab-component',
+            children=[
+                dls.Bounce(
+                dcc.Graph(id='graph-adjacency-matrix'),
+                color="#b52d37",
+                speed_multiplier=2,
+                ),   
+            ]
+        ),
+          
         html.Div(className='graph-display tab-component', children=[
             html.H4('show graph with surface mesh here')
         ]),

@@ -86,12 +86,25 @@ def main(
 ):
 
     graph_path = Path(graphs)
+
+    
+
+    # TODO: autodetect which file to use as infile, if directory is given.
+    """
     if not graph_path.is_dir():
         raise ValueError(f"No such directory {graph_path}")
     
      
     filename = "graph_objects"
     in_path = os.path.join(graph_path, filename)
+
+    in_path = Path(in_path)
+    """
+
+    if not graph_path.is_file():
+        raise ValueError(f"Specified path {graphs} is not a file.")
+
+    in_path = graph_path
 
     save_path = os.path.join(graph_path, "embeddings")
 

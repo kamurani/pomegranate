@@ -119,6 +119,7 @@ def main(
     loaded = list(loaded_graphs.values())
 
     graphs = []
+    graph_labels = []
     
     """
     for node_id, node_data in g.nodes(data=True):
@@ -131,12 +132,15 @@ def main(
         #print(g.nodes())
         psite = loaded[i]['psite']
         res = loaded[i]['res']
+        kinase = loaded[i]['kinase']
         #print(res)
         #print("psite coords:")
         #print(psite['coords'])
         #print(res in g.nodes())
 
         psite_loc = np.array(psite['coords'])
+
+        
 
 
 
@@ -158,13 +162,15 @@ def main(
             b_fac = node_data["b_factor"]
             #feature = [*m, *c, rsa]
 
-            feature = [dist_to_psite, rsa, b_fac, *m]  # 10 long   
+            #feature = [dist_to_psite, rsa, b_fac, *m]  # 10 long   
+            feature = [dist_to_psite, rsa, b_fac, m[2], m[3], m[4]]  # 10 long 
 
             node_data["feature"] = feature
             
         # Create sg instance from graph, using `feature` vector. 
         g_attr = StellarGraph.from_networkx(g, node_features="feature")
         graphs.append(g_attr)
+        graph_labels.append(kinase)
 
     
     #print(graphs[5].info())
@@ -173,6 +179,7 @@ def main(
     generator = sg.mapper.PaddedGraphGenerator(graphs)
 
     gc_model = sg.layer.GCNSupervisedGraphClassification(
+        #[32, 16, 8], ["relu", "relu", "relu"], generator, pool_all_layers=True
         [16, 8], ["relu", "relu"], generator, pool_all_layers=True
     )
     inp1, out1 = gc_model.in_out_tensors()
@@ -199,8 +206,7 @@ def main(
 
     pair_model.compile(keras.optimizers.Adam(1e-2), loss="mse")
 
-    NUM_EPOCHS = epochs # 500
-    history = pair_model.fit(train_gen, epochs=NUM_EPOCHS, verbose=0)
+    history = pair_model.fit(train_gen, epochs=epochs, verbose=0)
     #sg.utils.plot_history(history)
 
     embeddings = embedding_model.predict(generator.flow(graphs))
@@ -215,19 +221,54 @@ def main(
     print(f"Saved embeddings at {save_path}.")
 
 
+    kinases = np.array(graph_labels)
+    kinases = np.unique(kinases)    # unique kinases
 
+    # get dict mapping kinase to number
+    mapping = {}
+    for i, k in enumerate(kinases):
+        mapping[k] = i
 
+    group = []
+    for i, l in enumerate(graph_labels):
+        group.append(mapping[l])
     
     # Plot 
     from sklearn.manifold import TSNE
 
-    tsne = TSNE(2, init='random')
+    tsne = TSNE(2, learning_rate='auto')
     two_d = tsne.fit_transform(embeddings)
 
     from matplotlib import pyplot as plt
 
-    plt.scatter(two_d[:, 0], two_d[:, 1], alpha=0.6)
+    fig, ax = plt.subplots()
 
+    
+
+    plt.scatter(
+        two_d[:, 0], 
+        two_d[:, 1],
+        c=group,
+        label=group,
+        alpha=0.6
+    )
+
+
+    label_graph = True
+    if label_graph:
+        for i, l in enumerate(graph_labels):
+            plt.text(
+                x=two_d[i,0],
+                y=two_d[i,1],
+                s=l,
+            )
+
+
+
+    #for i, txt in enumerate(graph_labels):
+    #    ax.annotate(txt, two_d[i, 0], two_d[i, 1])
+
+    plt.show()
     plt.savefig('EMBEDDINGS_PLOT.png')
 
 

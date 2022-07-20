@@ -7,6 +7,7 @@ usage: python load.py ../datasets/yeast_full.txt structures/yeast-AF2 saved_grap
 """
 
 import collections
+import inspect
 import pickle
 import re
 from protein.phosphosite import get_surface_motif
@@ -21,7 +22,7 @@ from graphein.protein.config import DSSPConfig
 from graphein.protein.features.nodes import rsa
 
 from pathlib import Path
-from typing import Callable, List, Dict, Union
+from typing import Callable, List, Dict, Union, Tuple
 from collections.abc import Iterable
 
 import click as c
@@ -54,6 +55,16 @@ from definitions import STRUCTURE_PATH
 from traitlets import default
 from validate import get_database
 
+# TODO: alternative AA residue property feature vectors
+# e.g. 1-hot encoding of Residue type
+
+# TODO: support for describing features like 'm1-4' instead of 'm1','m2'...
+GRAPH_NODE_FEATURES = [
+    'm1','m2','m3','m4','m5','m6','m7'
+    'pdist', 'coords', 'bfac', 'rsa',
+]
+GRAPH_EDGE_FEATURES = []
+
 
 """
 Flatten an irregular list of iterables / ints. 
@@ -68,20 +79,23 @@ def flatten(xs):
 def nx_to_sg(
     graphs: Dict[int, Dict[str, Union[str, nx.Graph]]] = None,
     include_features: List[str] = None,
-    verbose: bool = True,
+    verbose: bool = False,
 ) -> Dict[int, Dict[str, Union[str, sg.StellarGraph]]]:
     in_graphs: List[Dict[str, Union[str, nx.Graph]]] = list(graphs.values())
 
     out_graphs = {}
 
     for idx, graph in enumerate(in_graphs):
+
+        if graph is None: pass
+        if graph['graph'] is None: pass
         g       = graph['graph'].copy()
         kinase  = graph['kinase']
         psite   = graph['psite']
         res     = graph['res']
 
-        if g is None:
-            pass
+        
+        
 
         # GET LOCATION OF PSITE
         psite_coords = np.array(psite['coords'])
@@ -190,9 +204,23 @@ def nx_to_sg(
 
     return out_graphs
 
+"""
+Get just the 'graph' components of a graph dict.
+"""
+def get_graphs_and_labels(
+    graphs: Dict[int, Dict[str, Union[str, sg.StellarGraph, nx.Graph]]]
+) -> Tuple[List[Union[sg.StellarGraph, nx.Graph]], List[str]]:
+
+    labels = graph_objects = []
+    
+    for graph in graphs.values():
+        graph_objects.append(graph['graph'])
+        labels.append(graph['kinase'])
+
+    return graph_objects, labels
 
 """
-Get list of graph labels. 
+Get list of graph labels from a graph dict object
 """
 def get_graph_labels(
     graphs: Dict[int, Dict[str, Union[str, sg.StellarGraph, nx.Graph]]]
@@ -278,11 +306,22 @@ def main(
 
     # Unpickle
     infile = open(in_path,'rb')
-    loaded_graphs = pickle.load(infile)
+    data = pickle.load(infile)
+    loaded_graphs = data['graphs_dict']
+    graph_format = data['format']
     infile.close()
 
     loaded = list(loaded_graphs.values())
 
+    # Check which type of graph we are using. 
+    g = loaded[0]['graph']
+    if isinstance(g, sg.StellarGraph):
+        print(f"StellarGraph format.")
+    
+    elif isinstance(g, nx.Graph):
+        print(f"NetworkX format.")
+
+    return
     graphs = []
     graph_labels = []
     
@@ -292,6 +331,8 @@ def main(
         print (node_data)
     return
     """
+
+
     for i in range(len(loaded)):
         g = loaded[i]['graph'].copy()
         #print(g.nodes())
@@ -341,6 +382,9 @@ def main(
     #print(graphs[5].info())
 
     # Generator
+
+    raw_graphs, graph_labels = get_graphs_and_labels(graphs)
+
     generator = sg.mapper.PaddedGraphGenerator(graphs)
 
     gc_model = sg.layer.GCNSupervisedGraphClassification(

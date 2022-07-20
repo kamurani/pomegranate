@@ -6,8 +6,8 @@
 usage: python load.py ../datasets/yeast_full.txt structures/yeast-AF2 saved_graphs
 """
 
-from distutils.log import debug
-from cluster_graphs import nx_to_sg
+#from distutils.log import debug
+from cluster_graphs import nx_to_sg, GRAPH_NODE_FEATURES
 
 import re
 
@@ -25,7 +25,7 @@ from graphein.protein.config import DSSPConfig
 from graphein.protein.features.nodes import rsa
 
 from pathlib import Path
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Tuple
 
 import click as c
 
@@ -272,6 +272,24 @@ saved graphs.  ), output format (e.g. nx, sg)
 @c.argument('structures', nargs=1)
 @c.argument('graphs', nargs=1)
 @c.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    help="Show extensive program output."
+)
+@c.option(
+    "--debug",
+    "-d",
+    is_flag=True,
+    help="Show extensive program output for debugging."
+)
+@c.option(
+    "--quiet",
+    "-q",
+    is_flag=True,
+    help="Suppress program output."
+)
+@c.option(
     "--dry-run",
     "--dryrun",
     "-n",
@@ -293,12 +311,14 @@ saved graphs.  ), output format (e.g. nx, sg)
     default=True,
 )
 @c.option(
+    # TODO: support multiple formats selected at once; i.e. saves more than one file.
     "-o",
     "--output-format",
     "--format",
-    type=str,
+    type=c.Choice(['NetworkX', 'StellarGraph', 'nx', 'sg'], case_sensitive=False),
     help="Save graphs as NetworkX or StellarGraph instances with feature preprocessing. ",
-    default="networkx",
+    default="NetworkX",
+    show_default=True,
 )
 @c.option(
     "-N",
@@ -313,6 +333,7 @@ saved graphs.  ), output format (e.g. nx, sg)
     help="The threshold radius of the motif",
     type=float,
     default=10.0,
+    show_default=True,
 )
 @c.option(
     "--rsa",
@@ -320,20 +341,57 @@ saved graphs.  ), output format (e.g. nx, sg)
     help="The RSA threshold of the motif",
     type=float,
     default=0.0,
+    show_default=True,
 )
-
+@c.option(
+    "--node-features",
+    "--nf",
+    is_flag=False,
+    default=','.join(GRAPH_NODE_FEATURES), show_default=True,
+    metavar="<node_features>",
+    type=c.STRING,
+    help="Which node features to include in the constructed graphs."
+)
+@c.option(
+    "--edge-features",
+    "--ef",
+    is_flag=False,
+)
+@c.option(
+    "--config",
+    "-c",
+    help="Path to config.yml file used to specify how to construct the graphs.",
+    # TODO: check if path right here?
+    default="config.yml",
+    show_default=True,
+)
 def main(
-    phosphosite, 
+    # POSITIONAL ARGUMENTS:
+    phosphosite,    
     structures,
     graphs,
+
+    # FLAGS:
+    verbose,
+    debug,
+    quiet,
     is_dryrun,
     unique,
     download,
+
+    # PARAMETERS:
     output_format,
     num_psites,
     radius,
     rsa,
+    node_features,
+    edge_features,
+    config,
 ):
+
+    if debug: 
+        verbose = True
+    
 
     if is_dryrun:
         raise NotImplementedError(f"--dryrun not implemented yet. ")
@@ -378,6 +436,14 @@ def main(
     # TODO: check if filename exists.  Prompt for new one / overwrite. 
 
     print(f"Output file is {out_path}.")
+
+
+    # Handle features
+    node_features = [f.strip() for f in node_features.split(',')]
+    #edge_features = [f.strip() for f in edge_features.split(',')]
+
+    print(f"Using node features {node_features}")
+    return
     
 
     graphs = load_graphs(
@@ -391,30 +457,38 @@ def main(
 
     print(f"Created {len(graphs.values())} graphs with radius {radius} and RSA {rsa}")
 
-    if output_format.lower() in ["sg", "stellargraph"]:
-        print(f"Converting graphs to StellarGraph instances...", end=" ")
+
+    # Save data
+    data = {}
+
+    if output_format == "sg":
+        
+        
+        if verbose: print(f"Converting graphs to StellarGraph instances...", end=" ") 
 
         graphs = nx_to_sg(graphs)
 
-        g = graphs[0]['graph']
+        if verbose: print(f"DONE.")
 
         if debug:
+            g = graphs[0]['graph']
             print(f"Graph 0 is type {type(g)}")
             print(g.info())
 
-    elif output_format.lower() in ["networkx", "nx"]:
-        print(f"Graphs are in NetworkX format.")
+    elif output_format == "nx":
+        if verbose: print(f"Graphs are in NetworkX format.")
     else:
         raise NotImplementedError(f"Output format '{output_format}' not implemented.")
     
-
+    data['graphs_dict'] = graphs
+    data['format'] = output_format
 
     # Save graphs to file
-    print(f"Saving graphs to {out_path} ...", end=" ")
+    if verbose: print(f"Saving graphs to {out_path} ...", end=" ")
     outfile =  open(out_path, 'wb')
-    pickle.dump(graphs, outfile)
+    pickle.dump(data, outfile)
     outfile.close()
-    print("DONE.")
+    if verbose: print("DONE.")
 
 
 

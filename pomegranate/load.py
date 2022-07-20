@@ -190,7 +190,7 @@ def load_graphs(
                 
                 if debug:
                     print(f"[{index}] Constructing graph from {acc}...", end=" ")
-                    print(f"DONE.  Graph {graphs[index]['graph'].name}, psite: {res}", end="")
+                    print(f"DONE.  Graph {graphs[index]['graph'].name}| PSITE: {res} | KINASE: {kinase}", end="")
                 if verbose:
                     print("")
                 

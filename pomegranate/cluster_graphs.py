@@ -66,6 +66,9 @@ GRAPH_NODE_FEATURES = [
 GRAPH_EDGE_FEATURES = []
 
 
+
+
+
 """
 Flatten an irregular list of iterables / ints. 
 """
@@ -87,8 +90,8 @@ def nx_to_sg(
 
     for idx, graph in enumerate(in_graphs):
 
-        if graph is None: pass
-        if graph['graph'] is None: pass
+        if graph is None: continue
+        if graph['graph'] is None: continue
         g       = graph['graph'].copy()
         kinase  = graph['kinase']
         psite   = graph['psite']
@@ -211,11 +214,15 @@ def get_graphs_and_labels(
     graphs: Dict[int, Dict[str, Union[str, sg.StellarGraph, nx.Graph]]]
 ) -> Tuple[List[Union[sg.StellarGraph, nx.Graph]], List[str]]:
 
-    labels = graph_objects = []
+    labels = []
+    graph_objects = []
     
     for graph in graphs.values():
-        graph_objects.append(graph['graph'])
-        labels.append(graph['kinase'])
+
+        if isinstance(graph['graph'], (sg.StellarGraph, nx.Graph)):
+            graph_objects.append(graph['graph'])
+            labels.append(graph['kinase'])
+        
 
     return graph_objects, labels
 
@@ -228,14 +235,12 @@ def get_graph_labels(
 
     labels = []
 
-    for i in range(len(graphs)):
-        
+    for i in range(len(graphs)):    
         if graphs[i] is None:
             labels.append(None) # preserve indexes, so we append even if None
         else:
             labels.append(graphs[i]['kinase'])
-
-        
+      
 
 """
 Test that ``graph_labels`` array correctly describes a ``graphs`` dict
@@ -267,15 +272,25 @@ def test_labels(graphs: Dict, labels: List):
 @c.option(
     "-e",
     "--epochs",
-    help="Number of epochs to train for",
-    type=int,
+    help="Number of epochs to train for.",
+    type=c.INT,
     default=200,
+    show_default=True,
+)
+@c.option(
+    "-b",
+    "--batch-size",
+    type=c.INT,
+    default=16, show_default=True,
+
+    help="Batch size to be used by data generator."
 )
 #@c.argument('structures', nargs=1)
 #@c.argument('graphs', nargs=1)
 def main(
     graphs,
     epochs,
+    batch_size,
 ):
 
     graph_path = Path(graphs)
@@ -307,11 +322,11 @@ def main(
     # Unpickle
     infile = open(in_path,'rb')
     data = pickle.load(infile)
-    loaded_graphs = data['graphs_dict']
+    graphs_dict = data['graphs_dict']
     graph_format = data['format']
     infile.close()
 
-    loaded = list(loaded_graphs.values())
+    loaded = list(graphs_dict.values())
 
     # Check which type of graph we are using. 
     g = loaded[0]['graph']
@@ -320,10 +335,10 @@ def main(
     
     elif isinstance(g, nx.Graph):
         print(f"NetworkX format.")
+        print(f"Converting...")
 
-    return
-    graphs = []
-    graph_labels = []
+        raise NotImplementedError(f"Converting at this point not implemented yet.")
+
     
     """
     for node_id, node_data in g.nodes(data=True):
@@ -332,65 +347,24 @@ def main(
     return
     """
 
+    # Get graphs and labels as lists
+    graphs: List[sg.StellarGraph]
+    graph_labels: List[str]
 
-    for i in range(len(loaded)):
-        g = loaded[i]['graph'].copy()
-        #print(g.nodes())
-        psite = loaded[i]['psite']
-        res = loaded[i]['res']
-        kinase = loaded[i]['kinase']
-        #print(res)
-        #print("psite coords:")
-        #print(psite['coords'])
-        #print(res in g.nodes())
-
-        psite_loc = np.array(psite['coords'])
-
-        
-
-
-
-        #print(psite_coords)
-        
-        # TODO: use EDGE FEATURES IN GRAPH LOADING TOO
-        
-        # For each node, create `feature` vector. 
-        for node_id, node_data in g.nodes(data=True):
-            # Create list of numerical features for each node.
-            #node_data = g.nodes(node_id)
-            
-            m = node_data["meiler"] 
-            node_loc = np.array(node_data["coords"])
-            dist_to_psite = np.linalg.norm(psite_loc - node_loc)
-            #print(f"dist to psite: {dist_to_psite}")
-
-            rsa = node_data["rsa"]
-            b_fac = node_data["b_factor"]
-            #feature = [*m, *c, rsa]
-
-            #feature = [dist_to_psite, rsa, b_fac, *m]  # 10 long   
-            feature = [dist_to_psite, rsa, b_fac, m[2], m[3], m[4], m[5]]  # 10 long 
-
-            node_data["feature"] = feature
-            
-        # Create sg instance from graph, using `feature` vector. 
-        g_attr = StellarGraph.from_networkx(g, node_features="feature")
-        graphs.append(g_attr)
-        graph_labels.append(kinase)
-
+    graphs, graph_labels = get_graphs_and_labels(graphs_dict)
     
-    #print(graphs[5].info())
-
     # Generator
-
-    raw_graphs, graph_labels = get_graphs_and_labels(graphs)
-
     generator = sg.mapper.PaddedGraphGenerator(graphs)
 
     gc_model = sg.layer.GCNSupervisedGraphClassification(
         #[32, 16, 8], ["relu", "relu", "relu"], generator, pool_all_layers=True
         [32, 16], ["relu", "relu"], generator, pool_all_layers=True
     )
+
+    print(f"MODEL: ")
+    print(gc_model)
+
+    return
     inp1, out1 = gc_model.in_out_tensors()
     inp2, out2 = gc_model.in_out_tensors()
 
@@ -411,7 +385,7 @@ def main(
 
     targets = [graph_distance(graphs[left], graphs[right]) for left, right in graph_idx]
 
-    train_gen = generator.flow(graph_idx, batch_size=16, targets=targets)
+    train_gen = generator.flow(graph_idx, batch_size=batch_size, targets=targets)
 
     pair_model.compile(keras.optimizers.Adam(1e-2), loss="mse")
 

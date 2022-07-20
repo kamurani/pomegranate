@@ -127,6 +127,11 @@ def load_graphs(
         
         # Phosphosite 
         #subgraph = 
+
+    # TODO 
+    # 
+
+
     pdb_dir = pdb_path 
     # Each phosphosite
     graphs = {}
@@ -190,7 +195,7 @@ def load_graphs(
                 
                 if debug:
                     print(f"[{index}] Constructing graph from {acc}...", end=" ")
-                    print(f"DONE.  Graph {graphs[index]['graph'].name}| PSITE: {res} | KINASE: {kinase}", end="")
+                    print(f"DONE.  Graph {graphs[index]['graph'].name} | PSITE: {res} | KINASE: {kinase}", end="")
                 if verbose:
                     print("")
                 
@@ -233,6 +238,29 @@ def load_graphs(
 
 '''
 
+
+"""
+TODO: command line options
+
+`-n` print what would be done i.e. dryrun
+`-v` verbose 
+`-q` quiet
+`-d` debug 
+`-i` interactive i.e. prompt
+`-f` force, i.e. overwrite without asking etc.
+`-c` config, i.e. provide file for describing how loading will work 
+
+
+TODO: features
+
+- autoskip (if ~enough PDB files are in directory, skip?)
+- Warn user if skip used, but directory doesn't have any (many?) PDB files in it
+- provide config file on how to load graphs 
+- i.e. output file, edge features, node features (can do 'staging' i.e. before 
+getting subgraph, we save temporarily so future config files can use the same 
+saved graphs.  ), output format (e.g. nx, sg) 
+"""
+
 @c.command()
 @c.argument('phosphosite', nargs=1)
 @c.argument('structures', nargs=1)
@@ -241,6 +269,11 @@ def load_graphs(
     "--download/--skip-download",
     help="Skip downloading protein structures into the supplied directory.  If the required structure does not exist, graph construction for that accession ID will be skipped.",
     default=True,
+)
+@c.option(
+    "-",
+    help="Save graphs as NetworkX or StellarGraph instances with feature preprocessing. ",
+    default=False,
 )
 @c.option(
     "-N",
@@ -263,19 +296,39 @@ def load_graphs(
     type=float,
     default=0.0,
 )
+
 def main(
     phosphosite, 
     structures,
     graphs,
     download,
+    convert,
     num_psites,
     radius,
     rsa,
     ):
 
+    if convert:
+        print(f"Converting graphs to StellarGraph instances...")
+    else:
+        print(f"Graphs are in NetworkX format.")
+
+    return
+
     # TODO: ensure that psite is always included; regardless of RSA
     # TODO: might be multiple identical graphs (i.e. only different thing in entry is the kinase)
     # have option to only count unique graphs.  Or utilise different entries. 
+
+    # TODO: 'stage' the preprocessing of graphs by first. 
+    # 1.  load set of graphs with given n features (edges etc.)
+    # 2. 'select' subset of features from already saved list of graphs
+    # 3.  i.e. have a saved version of "all graphs with edge features [a,b,c]" 
+    #           saved version of "all graphs with edge features [d, e]" etc.
+    # 4. load from this; then save all graphs with radius 10A, 0.2 RSA or whatever.  
+    # 5.  so entire loading doesn't have to occur again; when a different radius is chosen. 
+
+    # 6.  split clustering into visualisation and clustering; so we don't have to perform GCN 
+    # if we just want to try a diff way of viewing with tSNE or something. 
 
     graph_path = Path(graphs)
 
@@ -306,6 +359,9 @@ def main(
     )
 
     print(f"Created {len(graphs.values())} graphs with radius {radius} and RSA {rsa}")
+
+    
+
 
     # Save graphs to file
     print(f"Saving graphs to {out_path} ...", end=" ")

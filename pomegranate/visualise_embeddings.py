@@ -76,9 +76,10 @@ from validate import get_database
     show_default=True,
 )
 @c.option(
-    "--labels",
+    "--labels/--no-labels",
     "-l",
-    is_flag=True,
+    metavar="<label_graph>",
+    default=True,
     help="Show labels on plot."
 )
 @c.option(
@@ -96,7 +97,7 @@ def main(
 
     # OPTIONS
     dim_method,
-    labels,
+    label_graph,
     verbose,
 ):
     verbose = True # TODO: remove
@@ -127,26 +128,17 @@ def main(
     print(f"Input file is {in_path}.")
 
     # Unpickle
+    if verbose: print(f"Loading...", end=" ")
     infile = open(in_path,'rb')
     data = pickle.load(infile)
-    graphs_dict = data['graphs_dict']
-    graph_format = data['format']
     infile.close()
 
-    loaded = list(graphs_dict.values())
+    embeddings  = data['embeddings']
+    labels      = data['labels']
 
-    # Check which type of graph we are using. 
-    g = loaded[0]['graph']
-    if isinstance(g, sg.StellarGraph):
-        print(f"StellarGraph format.")
-    
-    elif isinstance(g, nx.Graph):
-        print(f"NetworkX format.")
-        print(f"Converting...")
 
-        raise NotImplementedError(f"Converting at this point not implemented yet.")
+    if verbose: print(f"Loaded embeddings of shape {embeddings.shape}, labels of shape {labels.shape}")
 
-    
     """
     for node_id, node_data in g.nodes(data=True):
         print (node_id)
@@ -154,71 +146,8 @@ def main(
     return
     """
 
-    # Get graphs and labels as lists
-    graphs: List[sg.StellarGraph]
-    graph_labels: List[str]
-
-    graphs, graph_labels = get_graphs_and_labels(graphs_dict)
     
-    # Generator
-    generator = sg.mapper.PaddedGraphGenerator(graphs)
-
-    # Model
-    layers = [32, 16]
-    act = "relu"
-    activations = [act for i in range(len(layers))]
-    gc_model = sg.layer.GCNSupervisedGraphClassification(
-        #[32, 16, 8], ["relu", "relu", "relu"], generator, pool_all_layers=True
-        layers, activations, generator, pool_all_layers=True
-    )
-
-    if verbose: 
-        print(f"MODEL\n-----")
-        print(f"LAYERS:\t\t{layers}")
-        print(f"ACTIVATIONS:\t{activations}")
-
-    inp1, out1 = gc_model.in_out_tensors()
-    inp2, out2 = gc_model.in_out_tensors()
-
-    vec_distance = tf.norm(out1 - out2, axis=1)
-
-    pair_model = keras.Model(inp1 + inp2, vec_distance)
-    embedding_model = keras.Model(inp1, out1)
-
-    def graph_distance(graph1, graph2):
-        spec1 = nx.laplacian_spectrum(graph1.to_networkx(feature_attr="feature"))
-        spec2 = nx.laplacian_spectrum(graph2.to_networkx(feature_attr="feature"))
-        k = min(len(spec1), len(spec2))
-        dist = np.linalg.norm(spec1[:k] - spec2[:k])
-        #print(f"Dist: {dist}")
-        return dist 
-
-    graph_idx = np.random.RandomState(0).randint(len(graphs), size=(200, 2))
-
-    targets = [graph_distance(graphs[left], graphs[right]) for left, right in graph_idx]
-
-    train_gen = generator.flow(graph_idx, batch_size=batch_size, targets=targets)
-
-    pair_model.compile(keras.optimizers.Adam(1e-2), loss="mse")
-
-    history = pair_model.fit(train_gen, epochs=epochs, verbose=0)
-    #sg.utils.plot_history(history)
-
-    if verbose: print(f"Generating embeddings...", end=" ")
-    embeddings = embedding_model.predict(generator.flow(graphs))
-    if verbose: print(f"DONE.")
-    print(f"Embeddings have shape {embeddings.shape}")
-
-    # Save embeddings 
-    if verbose: print("Saving embeddings...", end=" ")
-    outfile =  open(save_path, 'wb')
-    pickle.dump(embeddings, outfile)
-    outfile.close()
-    if verbose: print(f"DONE.")
-    print(f"Saved embeddings at {save_path}.")
-
-
-    kinases = np.array(graph_labels)
+    kinases = np.array(labels)
     kinases = np.unique(kinases)    # unique kinases
 
     # get dict mapping kinase to number
@@ -227,20 +156,20 @@ def main(
         mapping[k] = i
 
     group = []
-    for i, l in enumerate(graph_labels):
+    for i, l in enumerate(labels):
         group.append(mapping[l])
     
     # Plot 
-    from sklearn.manifold import TSNE
-
-    tsne = TSNE(2, learning_rate='auto')
-    two_d = tsne.fit_transform(embeddings)
+    if dim_method.lower() == "tsne":
+        from sklearn.manifold import TSNE
+        tsne = TSNE(2, learning_rate='auto')
+        two_d = tsne.fit_transform(embeddings)
+    else:
+        raise NotImplementedError(f"Dimensionality reduction using '{dim_method}' not implemented.")
 
     from matplotlib import pyplot as plt
 
     fig, ax = plt.subplots()
-
-    
 
     plt.scatter(
         two_d[:, 0], 
@@ -250,17 +179,13 @@ def main(
         alpha=0.6
     )
 
-
-    label_graph = True
     if label_graph:
-        for i, l in enumerate(graph_labels):
+        for i, l in enumerate(labels):
             plt.text(
                 x=two_d[i,0],
                 y=two_d[i,1],
                 s=l,
             )
-
-
 
     #for i, txt in enumerate(graph_labels):
     #    ax.annotate(txt, two_d[i, 0], two_d[i, 1])

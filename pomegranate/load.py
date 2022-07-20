@@ -247,7 +247,7 @@ def load_graphs(
     "--num-psites",
     help="Only consider the first N motifs in a dataset.  Graph construction will continue until N graphs are made, or the end of the dataset is reached.",
     type=int,
-    default=10, # TODO: don't use this default value
+    default=-1, 
 )
 @c.option(
     "-r",

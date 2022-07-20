@@ -285,13 +285,22 @@ def test_labels(graphs: Dict, labels: List):
 
     help="Batch size to be used by data generator."
 )
+@c.option(
+    "-v", 
+    "--verbose",
+    is_flag=True,
+    
+)
 #@c.argument('structures', nargs=1)
 #@c.argument('graphs', nargs=1)
 def main(
     graphs,
     epochs,
     batch_size,
+    verbose,
 ):
+    verbose = True # TODO: remove
+
 
     graph_path = Path(graphs)
 
@@ -356,15 +365,23 @@ def main(
     # Generator
     generator = sg.mapper.PaddedGraphGenerator(graphs)
 
+    # Model
+    layers = [32, 16]
+    act = "relu"
+    activations = [act for i in range(len(layers))]
     gc_model = sg.layer.GCNSupervisedGraphClassification(
         #[32, 16, 8], ["relu", "relu", "relu"], generator, pool_all_layers=True
-        [32, 16], ["relu", "relu"], generator, pool_all_layers=True
+        layers, activations, generator, pool_all_layers=True
     )
 
-    print(f"MODEL: ")
-    print(gc_model)
+    if verbose: 
+        print(f"MODEL\n-----")
+        print(f"LAYERS:\t\t{layers}")
+        print(f"ACTIVATIONS:\t{activations}")
 
+    
     return
+    
     inp1, out1 = gc_model.in_out_tensors()
     inp2, out2 = gc_model.in_out_tensors()
 

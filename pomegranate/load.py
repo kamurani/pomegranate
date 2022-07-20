@@ -45,7 +45,7 @@ def load_graphs(
     radius_threshold: float = 10.0,
     rsa_threshold: float = 0.0,
     download: bool = True,
-    num_psites: int = 1000, # Make 1000 graphs as default
+    num_psites: int = -1, # Make 1000 graphs as default
     verbose: bool = True,
     debug: bool = True,
     
@@ -53,6 +53,7 @@ def load_graphs(
 
     if debug:
         verbose = True
+
 
     psite_path = Path(psite_list)
     if not psite_path.is_file():
@@ -199,8 +200,8 @@ def load_graphs(
                 if verbose:
                     print(f"FAILED.")
         
-        # Exit if we have reached N graphs
-        if stats['num_success'] >= num_psites:
+        # Exit if we have reached N graphs, and the user supplied an N
+        if stats['num_success'] >= num_psites and num_psites > 0:
             break
             
     # Print stats      

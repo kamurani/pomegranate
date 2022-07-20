@@ -6,7 +6,9 @@
 usage: python load.py ../datasets/yeast_full.txt structures/yeast-AF2 saved_graphs
 """
 
+import collections
 import pickle
+import re
 from protein.phosphosite import get_surface_motif
 
 
@@ -19,8 +21,11 @@ from graphein.protein.config import DSSPConfig
 from graphein.protein.features.nodes import rsa
 
 from pathlib import Path
+from typing import Callable, List, Dict, Union
+from collections.abc import Iterable
 
 import click as c
+
 
 
 
@@ -50,6 +55,166 @@ from traitlets import default
 from validate import get_database
 
 
+"""
+Flatten an irregular list of iterables / ints. 
+"""
+def flatten(xs):
+    for x in xs:
+        if isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
+            yield from flatten(x)
+        else:
+            yield x
+
+def nx_to_sg(
+    graphs: Dict[int, Dict[str, Union[str, nx.Graph]]] = None,
+    include_features: List[str] = None,
+    verbose: bool = True,
+) -> Dict[int, Dict[str, Union[str, sg.StellarGraph]]]:
+    in_graphs: List[Dict[str, Union[str, nx.Graph]]] = list(graphs.values())
+
+    out_graphs = {}
+
+    for idx, graph in enumerate(in_graphs):
+        g       = graph['graph'].copy()
+        kinase  = graph['kinase']
+        psite   = graph['psite']
+        res     = graph['res']
+
+        if g is None:
+            pass
+
+        # GET LOCATION OF PSITE
+        psite_coords = np.array(psite['coords'])
+
+        # TODO: 'zero' coords to use psite as (0,0,0) and all other nodes are 'relative' vectors from here
+        # TODO: use EDGE FEATURES IN GRAPH LOADING TOO
+        graph_labels = []
+
+        """
+        dispatcher = {'foobar': [foo, bar], 'bazcat': [baz, cat]}
+        
+        def fire_all(func_list):
+            for f in func_list:
+                f()
+        
+        fire_all(dispatcher['foobar])
+        """
+
+        # WHAT IF?
+        '''
+        dispatcher = {
+            'rsa' : get_feature_func('rsa'), 
+            'm' : get_feature_func('meiler'),
+            'coords', get_coords,
+        }
+        '''
+        dispatcher: Dict[str, Callable] = {}
+
+        def get_rsa(node) -> float:
+            return node["rsa"] 
+        def get_bfac(node) -> float:
+            return node["b_factor"]
+        def get_dist_psite(node) -> float:
+            return 0 # TODO
+        def get_coords(node) -> np.ndarray:
+            return np.array(node["coords"])   # np array
+        def get_meiler_func(m: str) -> Callable:
+            p = re.compile("m([1-7])")
+            dim = p.search(m).group(1)
+            if dim:
+                idx = int(dim) - 1
+                return lambda node_data : node_data["meiler"][idx]
+            else: 
+                raise ValueError(f"No such meiler embedding dimension '{m}'")
+        
+        '''
+        Returns a function that calculates distance to a phosphosite for any node that is input.
+        '''
+        def get_psite_func(psite_coords: np.ndarray) -> Callable:
+            return lambda node_data: np.linalg.norm(get_coords(node_data) - psite_coords)
+        
+        dispatcher = {
+            'rsa' : get_rsa, 
+            'coords': get_coords,
+            'bfac': get_bfac, 
+            'pdist': get_psite_func(psite_coords),
+        }
+        disp = dispatcher
+
+        for m in ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7']: # each meiler embedding dimension
+            disp[m] = get_meiler_func(m)
+
+        
+        if include_features is None:   
+            # Use default features     
+            include_features = ['rsa', 'pdist', 'bfac', 'm1', 'm2', 'm3']
+            if verbose:
+                print(f"No feature list given.  Using default: {include_features}")
+
+        
+        for node_id, node_data in g.nodes(data=True):
+            
+            n = node_data
+            if True:
+                
+                n['feature'] = list(flatten([disp[f](n) for f in include_features]))
+
+                print(f"Feature: {n['feature']}")
+                
+                # WHY DOESN'T THIS WORK? TODO
+                #node_data['feature'] = [*disp[f](n) if is_iterable(disp[f](n)) else disp[f](n) for f in features]
+
+            else:
+
+                # Get list of numerical features
+                m = node_data["meiler"] # node's meiler embedding
+                node_loc = np.array(node_data["coords"])    # node's euclidean coords
+                dist_to_psite = np.linalg.norm(node_loc - psite_coords) # node's distance to psite
+                
+                rsa = node_data["rsa"]  # node's relative solvent accessibility
+                b_fac = node_data["b_factor"]   # node's temperature 
+                
+                #feature = [*m, *c, rsa]
+                #feature = [dist_to_psite, rsa, b_fac, *m]  # 10 long   
+                
+                feature = [dist_to_psite, rsa, b_fac, m[2], m[3], m[4], m[5]]  # 10 long 
+                #node_data["feature"] = feature  # create new 'feature' vector to be accessed by StellarGraph instance
+            
+        # Create sg instance from graph, using `feature` vector. 
+        g_attr = StellarGraph.from_networkx(g, node_features="feature")
+
+        # Create 'graph' dict
+        out_graphs[idx] = dict(graph=g_attr, res=res, psite=psite, kinase=kinase)
+        
+        graph_labels.append(kinase) # unused for now
+
+    return out_graphs
+
+
+"""
+Get list of graph labels. 
+"""
+def get_graph_labels(
+    graphs: Dict[int, Dict[str, Union[str, sg.StellarGraph, nx.Graph]]]
+) -> List[str]:
+
+    labels = []
+
+    for i in range(len(graphs)):
+        
+        if graphs[i] is None:
+            labels.append(None) # preserve indexes, so we append even if None
+        else:
+            labels.append(graphs[i]['kinase'])
+
+        
+
+"""
+Test that ``graph_labels`` array correctly describes a ``graphs`` dict
+"""
+def test_labels(graphs: Dict, labels: List):
+    for i in graphs.keys():
+        assert graphs[i]['kinase'] == labels[i], "Looks like we screwed up graph labels... yikes"
 
 '''
     "-p",
@@ -163,7 +328,7 @@ def main(
             #feature = [*m, *c, rsa]
 
             #feature = [dist_to_psite, rsa, b_fac, *m]  # 10 long   
-            feature = [dist_to_psite, rsa, b_fac, m[2], m[3], m[4]]  # 10 long 
+            feature = [dist_to_psite, rsa, b_fac, m[2], m[3], m[4], m[5]]  # 10 long 
 
             node_data["feature"] = feature
             
@@ -180,7 +345,7 @@ def main(
 
     gc_model = sg.layer.GCNSupervisedGraphClassification(
         #[32, 16, 8], ["relu", "relu", "relu"], generator, pool_all_layers=True
-        [16, 8], ["relu", "relu"], generator, pool_all_layers=True
+        [32, 16], ["relu", "relu"], generator, pool_all_layers=True
     )
     inp1, out1 = gc_model.in_out_tensors()
     inp2, out2 = gc_model.in_out_tensors()

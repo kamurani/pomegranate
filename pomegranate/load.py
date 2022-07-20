@@ -6,6 +6,9 @@
 usage: python load.py ../datasets/yeast_full.txt structures/yeast-AF2 saved_graphs
 """
 
+from distutils.log import debug
+from cluster_graphs import nx_to_sg
+
 import re
 
 # Pomegranate
@@ -22,6 +25,7 @@ from graphein.protein.config import DSSPConfig
 from graphein.protein.features.nodes import rsa
 
 from pathlib import Path
+from typing import List, Dict, Union
 
 import click as c
 
@@ -49,7 +53,9 @@ def load_graphs(
     verbose: bool = True,
     debug: bool = True,
     
-):
+) -> Dict[int, Dict[str, Union[str, nx.Graph]]]:    # TODO: use typed dict with each key/value pair being defined
+    #graph = {'graph': g, 'kinase': kinase, 'psite': psite, 'res': res}
+    # graphs[index] = graph
 
     if debug:
         verbose = True
@@ -266,14 +272,33 @@ saved graphs.  ), output format (e.g. nx, sg)
 @c.argument('structures', nargs=1)
 @c.argument('graphs', nargs=1)
 @c.option(
-    "--download/--skip-download",
+    "--dry-run",
+    "--dryrun",
+    "-n",
+    "is_dryrun",
+    is_flag=True,
+    help="Print out what the program would do without loading the graphs.",
+
+
+)
+@c.option(
+    "--unique",
+    "-u",
+    is_flag=True,
+    help="Only construct graphs for unique motifs.  Duplicate entries (i.e. with different kinases) are ignored."
+)
+@c.option(
+    "--download/--skip-download", " /-S",
     help="Skip downloading protein structures into the supplied directory.  If the required structure does not exist, graph construction for that accession ID will be skipped.",
     default=True,
 )
 @c.option(
-    "-",
+    "-o",
+    "--output-format",
+    "--format",
+    type=str,
     help="Save graphs as NetworkX or StellarGraph instances with feature preprocessing. ",
-    default=False,
+    default="networkx",
 )
 @c.option(
     "-N",
@@ -301,20 +326,26 @@ def main(
     phosphosite, 
     structures,
     graphs,
+    is_dryrun,
+    unique,
     download,
-    convert,
+    output_format,
     num_psites,
     radius,
     rsa,
-    ):
+):
 
-    if convert:
-        print(f"Converting graphs to StellarGraph instances...")
+    if is_dryrun:
+        raise NotImplementedError(f"--dryrun not implemented yet. ")
+    
+    if output_format.lower() in ["sg", "stellargraph"]:
+        output_format = "sg"
+    elif output_format.lower() in ["networkx", "nx"]:
+        output_format = "nx"
     else:
-        print(f"Graphs are in NetworkX format.")
+        raise NotImplementedError(f"Output format '{output_format}' not implemented.")
 
-    return
-
+    
     # TODO: ensure that psite is always included; regardless of RSA
     # TODO: might be multiple identical graphs (i.e. only different thing in entry is the kinase)
     # have option to only count unique graphs.  Or utilise different entries. 
@@ -360,6 +391,21 @@ def main(
 
     print(f"Created {len(graphs.values())} graphs with radius {radius} and RSA {rsa}")
 
+    if output_format.lower() in ["sg", "stellargraph"]:
+        print(f"Converting graphs to StellarGraph instances...", end=" ")
+
+        graphs = nx_to_sg(graphs)
+
+        g = graphs[0]['graph']
+
+        if debug:
+            print(f"Graph 0 is type {type(g)}")
+            print(g.info())
+
+    elif output_format.lower() in ["networkx", "nx"]:
+        print(f"Graphs are in NetworkX format.")
+    else:
+        raise NotImplementedError(f"Output format '{output_format}' not implemented.")
     
 
 

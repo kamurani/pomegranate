@@ -69,7 +69,7 @@ from validate import get_database
 @c.option(
     # TODO: support multiple ? i.e. PCA first?
     "--dim-method",
-    "--method"
+    "--method",
     type=c.Choice(['UMAP', 'tSNE', 'PCA'], case_sensitive=False),
     help="Method to use for dimensionality reduction.",
     default="tSNE",

@@ -5,11 +5,13 @@
 
 from distutils.log import debug
 import dash
-from dash import Dash, dcc, html, Input, Output
+from dash import Dash, dcc, html, Input, Output, State
 from tabs.seeMotif import motifVisualisationTab
 from help_tab import help_text
 
+import dash_loading_spinners as dls
 
+import time
 
 PROTEIN_ID = "default"
 
@@ -45,15 +47,53 @@ content = html.Div(
     ]
 )
 
-app.layout = html.Div([
-    html.Img(src=app.get_asset_url('imgs/POMEGRANATE-LOGO.png'), style={'width': '40%'}),
-    html.H2('PhOsphosite Motif Explorer -- GRAph Network Abstraction Through Embeddings'),
-    html.Div(id="content-grid", children=[sidebar,content]),
-])
+app.layout = html.Div(
+    children=[
+        html.Div(
+            id="div-loading",
+            children=[
+                dls.Pacman(
+                    fullscreen=True, 
+                    id="loading-whole-app"
+                )
+            ]
+        ),
+        html.Div(
+            className="div-app",
+            id="div-app",
+            children = [ html.Div([
+                    html.Img(src=app.get_asset_url('imgs/POMEGRANATE-LOGO.png'), style={'width': '40%'}),
+                    html.H2('PhOsphosite Motif Explorer -- GRAph Network Abstraction Through Embeddings'),
+                    html.Div(id="content-grid", children=[sidebar,content]),
+                ])
+        ]
+        )
+    ]
+)
+
+@app.callback(
+    Output("div-loading", "children"),
+    [
+        Input("div-app", "loading_state")
+    ],
+    [
+        State("div-loading", "children"),
+    ]
+)
+def hide_loading_after_startup(
+    loading_state, 
+    children
+    ):
+    if children:
+        print("remove loading spinner!")
+        return None
+    print("spinner already gone!")
+    raise PreventUpdate
 
 @app.callback(Output('tab-container', 'children'), Input('tab-options', 'value'))
 def render_content(tab):
     if tab == 'single-motif-view':
+        time.sleep(2);
         return motifVisualisationTab()
     elif tab == 'multi-motif-view':
         return html.Div([

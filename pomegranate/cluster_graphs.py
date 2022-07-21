@@ -382,12 +382,13 @@ def main(
     generator = sg.mapper.PaddedGraphGenerator(graphs)
 
     # Model
-    layers = [32, 16]
+    layers = [32, 32, 16]
     act = "relu"
     activations = [act for i in range(len(layers))]
     gc_model = sg.layer.GCNSupervisedGraphClassification(
         #[32, 16, 8], ["relu", "relu", "relu"], generator, pool_all_layers=True
-        layers, activations, generator, pool_all_layers=True
+        layers, activations, generator, pool_all_layers=True,
+        #dropout=0.5,
     )
 
     if verbose: 
@@ -411,8 +412,8 @@ def main(
         #print(f"Dist: {dist}")
         return dist 
 
-    num_samples = 600
-    graph_idx = np.random.RandomState(0).randint(len(graphs), size=(num_samples, 2))
+    num_samples = 800
+    graph_idx = np.random.RandomState(42).randint(len(graphs), size=(num_samples, 2))
 
     targets = [graph_distance(graphs[left], graphs[right]) for left, right in graph_idx]
 
@@ -425,7 +426,7 @@ def main(
         print(f"Starting training on {num_samples} samples for {epochs} epochs...")
     
     start = time.time()
-    history = pair_model.fit(train_gen, epochs=epochs, verbose=0) # verbose?
+    history = pair_model.fit(train_gen, epochs=epochs, verbose=verbose) 
     end = time.time()
     #sg.utils.plot_history(history)
 
@@ -451,136 +452,6 @@ def main(
     print(f"Saved embeddings at {save_path}.")
 
     return
-
-    kinases = np.array(graph_labels)
-    kinases = np.unique(kinases)    # unique kinases
-
-    # get dict mapping kinase to number
-    mapping = {}
-    for i, k in enumerate(kinases):
-        mapping[k] = i
-
-    group = []
-    for i, l in enumerate(graph_labels):
-        group.append(mapping[l])
-    
-    # Plot 
-    from sklearn.manifold import TSNE
-
-    tsne = TSNE(2, learning_rate='auto')
-    two_d = tsne.fit_transform(embeddings)
-
-    from matplotlib import pyplot as plt
-
-    fig, ax = plt.subplots()
-
-    
-
-    plt.scatter(
-        two_d[:, 0], 
-        two_d[:, 1],
-        c=group,
-        label=group,
-        alpha=0.6
-    )
-
-
-    label_graph = True
-    if label_graph:
-        for i, l in enumerate(graph_labels):
-            plt.text(
-                x=two_d[i,0],
-                y=two_d[i,1],
-                s=l,
-            )
-
-
-
-    #for i, txt in enumerate(graph_labels):
-    #    ax.annotate(txt, two_d[i, 0], two_d[i, 1])
-
-    plt.show()
-    plt.savefig('EMBEDDINGS_PLOT.png')
-
-
-    
-    
-
-    '''
-
-    # Convert to sg instances
-    print("Converting...")
-    for k in loaded_graphs.keys():
-        
-        g = loaded_graphs[k].copy()
-        #print(f"[{k}] {g}")
-
-        print(g)
-
-        for node_id, node_data in g.nodes(data=True):
-            # Create list of numerical features for each node.
-            m = node_data["meiler"]
-            c = node_data["coords"]
-            rsa = node_data["rsa"]
-            feature = [*m, *c, rsa]
-
-            node_data["feature"] = feature
-        
-        g_attr = StellarGraph.from_networkx(g, node_features="feature")
-
-        loaded_graphs[k] = StellarGraph.from_networkx(g_attr)
-        #print(g.info())
-
-    graphs = list(loaded_graphs.values())
-    
-
-    def compute_features(node_id):
-    # in general this could compute something based on other features, but for this example,
-    # we don't have any other features, so we'll just do something basic with the node_id
-        hydromap_a = { 
-            "ILE" : 4.5,
-            "VAL" : 4.2,
-            "LEU" : 3.8,
-            "PHE" : 2.8,
-            "CYS" : 2.5,
-            "MET" : 1.9,
-            "ALA" : 1.8,
-            "GLY" : -0.4,
-            "THR" : -0.7,
-            "SER" : -0.8,
-            "TRP" : -0.9,
-            "TYR" : -1.3,
-            "PRO" : -1.6,
-            "HIS" : -3.2,
-            "GLU" : -3.5,
-            "GLN" : -3.5,
-            "ASP" : -3.5,
-            "ASN" : -3.5,
-            "LYS" : -3.9,
-            "ARG" : -4.5,
-        }
-        seq_pos = node_id.split(':')[-1]
-        res = node_id.split(':')[1]
-        hydro = hydromap_a[res] 
-        return [seq_pos, hydro]
-
-    '''
-
-    
-
-
-    
-    
-    
-
-   
-    
-
-
-
-    
-
-
 
 
 if __name__ == "__main__":

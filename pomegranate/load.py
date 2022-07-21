@@ -191,7 +191,7 @@ def load_graphs(
             if verbose:
                 print(f"[{index}] Constructing graph from {acc}...", end=" ")
             
-            
+            try: 
                 g = construct_graph(config, pdb_path=pdb_path) 
 
                 pos: int = int(res_pos)
@@ -223,7 +223,7 @@ def load_graphs(
 
                 psite_contained = res in list(g.nodes())
 
-            try:    
+
                 stats['num_success'] += 1
                 
                 if debug:

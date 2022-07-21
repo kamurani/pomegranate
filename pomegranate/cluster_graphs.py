@@ -10,6 +10,7 @@ import collections
 import inspect
 import pickle
 import re
+import time
 from protein.phosphosite import get_surface_motif
 
 
@@ -168,7 +169,9 @@ def nx_to_sg(
             if verbose:
                 print(f"No feature list given.  Using default: {include_features}")
 
-        
+        # Check features given
+        for f in include_features: assert f in disp.keys(), f"Unknown node feature {f}"
+
         for node_id, node_data in g.nodes(data=True):
             
             n = node_data
@@ -214,17 +217,19 @@ def get_graphs_and_labels(
     graphs: Dict[int, Dict[str, Union[str, sg.StellarGraph, nx.Graph]]]
 ) -> Tuple[List[Union[sg.StellarGraph, nx.Graph]], List[str]]:
 
-    labels = []
-    graph_objects = []
+    labels          = []
+    graph_objects   = []
+    graph_dicts     = []
     
     for graph in graphs.values():
 
         if isinstance(graph['graph'], (sg.StellarGraph, nx.Graph)):
             graph_objects.append(graph['graph'])
+            graph_dicts.append(graph)
             labels.append(graph['kinase'])
         
 
-    return graph_objects, labels
+    return graph_objects, graph_dicts, labels
 
 """
 Get list of graph labels from a graph dict object
@@ -248,6 +253,14 @@ Test that ``graph_labels`` array correctly describes a ``graphs`` dict
 def test_labels(graphs: Dict, labels: List):
     for i in graphs.keys():
         assert graphs[i]['kinase'] == labels[i], "Looks like we screwed up graph labels... yikes"
+
+"""
+Test ``graph_labels`` array correctly describes a list of ``graph_dict``
+"""
+def test_labels_list(graphs: List, labels: List):
+    for i, graph in enumerate(graphs):
+        assert graph['kinase'] == labels[i]
+
 
 '''
     "-p",
@@ -360,7 +373,10 @@ def main(
     graphs: List[sg.StellarGraph]
     graph_labels: List[str]
 
-    graphs, graph_labels = get_graphs_and_labels(graphs_dict)
+    graphs, graph_dicts, graph_labels = get_graphs_and_labels(graphs_dict)
+
+
+    test_labels_list(graph_dicts, graph_labels)
     
     # Generator
     generator = sg.mapper.PaddedGraphGenerator(graphs)
@@ -379,9 +395,6 @@ def main(
         print(f"LAYERS:\t\t{layers}")
         print(f"ACTIVATIONS:\t{activations}")
 
-    
-    return
-    
     inp1, out1 = gc_model.in_out_tensors()
     inp2, out2 = gc_model.in_out_tensors()
 
@@ -398,28 +411,46 @@ def main(
         #print(f"Dist: {dist}")
         return dist 
 
-    graph_idx = np.random.RandomState(0).randint(len(graphs), size=(200, 2))
+    num_samples = 600
+    graph_idx = np.random.RandomState(0).randint(len(graphs), size=(num_samples, 2))
 
     targets = [graph_distance(graphs[left], graphs[right]) for left, right in graph_idx]
 
     train_gen = generator.flow(graph_idx, batch_size=batch_size, targets=targets)
 
     pair_model.compile(keras.optimizers.Adam(1e-2), loss="mse")
-
-    history = pair_model.fit(train_gen, epochs=epochs, verbose=0)
+    
+    if verbose:
+        print("-----------------")
+        print(f"Starting training on {num_samples} samples for {epochs} epochs...")
+    
+    start = time.time()
+    history = pair_model.fit(train_gen, epochs=epochs, verbose=0) # verbose?
+    end = time.time()
     #sg.utils.plot_history(history)
 
-    embeddings = embedding_model.predict(generator.flow(graphs))
+    if verbose:
+        print("-----------------")
+        print(f"Completed training after {end - start} seconds.\n")
 
+    if verbose: print(f"Generating embeddings...", end=" ")
+    embeddings = embedding_model.predict(generator.flow(graphs))
+    if verbose: print(f"DONE.")
     print(f"Embeddings have shape {embeddings.shape}")
 
     # Save embeddings 
-    print("Saving embeddings...")
+    data = dict(
+        embeddings=embeddings,
+        labels=graph_labels
+    )
+    if verbose: print("Saving embeddings...", end=" ")
     outfile =  open(save_path, 'wb')
-    pickle.dump(embeddings, outfile)
+    pickle.dump(data, outfile)
     outfile.close()
+    if verbose: print(f"DONE.")
     print(f"Saved embeddings at {save_path}.")
 
+    return
 
     kinases = np.array(graph_labels)
     kinases = np.unique(kinases)    # unique kinases

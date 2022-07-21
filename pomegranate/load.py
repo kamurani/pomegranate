@@ -21,6 +21,8 @@ from graphein.protein.graphs import construct_graph
 from graphein.protein.config import ProteinGraphConfig
 from graphein.protein.edges.distance import *	
 
+from graphein.utils.utils import protein_letters_3to1_all_caps as aa3to1
+
 from graphein.protein.config import DSSPConfig
 from graphein.protein.features.nodes import rsa
 
@@ -52,6 +54,7 @@ def load_graphs(
     num_psites: int = -1, # Make 1000 graphs as default
     verbose: bool = True,
     debug: bool = True,
+    node_features: List[str] = None
     
 ) -> Dict[int, Dict[str, Union[str, nx.Graph]]]:    # TODO: use typed dict with each key/value pair being defined
     #graph = {'graph': g, 'kinase': kinase, 'psite': psite, 'res': res}
@@ -135,7 +138,9 @@ def load_graphs(
         #subgraph = 
 
     # TODO 
-    # 
+    # Detect duplicates i.e. same kinase, same graph 
+    # Option to store kinases as list instead of a whole new graph
+    # Option to use 'known kinases' instead of 'unknown' -- as a CLI arg
 
 
     pdb_dir = pdb_path 
@@ -143,13 +148,13 @@ def load_graphs(
     graphs = {}
 
     edge_fns = [
-            #add_aromatic_interactions,
+            add_aromatic_interactions,
             add_hydrophobic_interactions,
-            #add_aromatic_sulphur_interactions,
-            #add_cation_pi_interactions,
-            #add_disulfide_interactions,
-            #add_hydrogen_bond_interactions,
-            #add_ionic_interactions,
+            add_aromatic_sulphur_interactions,
+            add_cation_pi_interactions,
+            add_disulfide_interactions,
+            add_hydrogen_bond_interactions,
+            add_ionic_interactions,
             add_peptide_bonds
         ]
     config = ProteinGraphConfig(
@@ -163,9 +168,9 @@ def load_graphs(
     for idx, row in df.iterrows():
 
         #print(index, row['acc'], row['position'], row['code'])
-        acc         = row['acc']
-        pos         = row['position'] 
-        res_code    = row['code']
+        acc             = row['acc']
+        res_pos         = row['position'] 
+        res_code: str   = row['code']
 
         if type(row['kinases']) == str:
             kinase = row['kinases']
@@ -186,22 +191,50 @@ def load_graphs(
             if verbose:
                 print(f"[{index}] Constructing graph from {acc}...", end=" ")
             
-            try:
+            
                 g = construct_graph(config, pdb_path=pdb_path) 
-                res = list(g.nodes())[pos-1]
 
-                psite = g.nodes(data=True)[res]
-                g = get_surface_motif(g, site=pos) # use default thresholds
+                pos: int = int(res_pos)
+                res: str = list(g.nodes())[pos-1]
+
+                psite: Dict = g.nodes(data=True)[res]
+                
+
+                psite_res: str = str(psite['residue_name'])
+                psite_num: int = int(psite['residue_number'])
+
+                g = get_surface_motif(g, site=pos, r=radius_threshold, asa_threshold=rsa_threshold) 
+
+                # Assert that phosphosite residue is same as what we expected 
+                assert aa3to1(psite_res) == res_code, f"Residue mismatch {psite_res} and {res_code}"
+                assert aa3to1(res.split(':')[1]) == res_code, f"Residue mismatch {res} and {res_code} {pos}"
+                assert psite_num == pos
+
                 g.name += f" @ {pos} {res_code}"
+
+
+                
+                # Assert that phosphosiste is included in the graph.  
+                # TODO: display green on the terminal output if it is included; 
+                # Display red on terminal if it is excluded (and --force was used.)
 
                 graph = {'graph': g, 'kinase': kinase, 'psite': psite, 'res': res}
                 graphs[index] = graph
-                
+
+                psite_contained = res in list(g.nodes())
+
+            try:    
                 stats['num_success'] += 1
                 
                 if debug:
                     print(f"[{index}] Constructing graph from {acc}...", end=" ")
+                    
+
+                    if psite_contained: print('\x1b[6;30;42m' + '[PSITE]' + '\x1b[0m', end=" ")
+                    else: print('\x1b[1;37;41m' + '[PSITE]' + '\x1b[0m', end=" ")
                     print(f"DONE.  Graph {graphs[index]['graph'].name} | PSITE: {res} | KINASE: {kinase}", end="")
+
+                    #print(f"\t{'YES' if psite_contained else 'NO'}", end=" ")
                 if verbose:
                     print("")
                 
@@ -313,6 +346,7 @@ saved graphs.  ), output format (e.g. nx, sg)
 @c.option(
     # TODO: support multiple formats selected at once; i.e. saves more than one file.
     "-o",
+    "--graph-format",
     "--output-format",
     "--format",
     type=c.Choice(['NetworkX', 'StellarGraph', 'nx', 'sg'], case_sensitive=False),
@@ -324,14 +358,14 @@ saved graphs.  ), output format (e.g. nx, sg)
     "-N",
     "--num-psites",
     help="Only consider the first N motifs in a dataset.  Graph construction will continue until N graphs are made, or the end of the dataset is reached.",
-    type=int,
+    type=c.INT,
     default=-1, 
 )
 @c.option(
     "-r",
     "--radius",
     help="The threshold radius of the motif",
-    type=float,
+    type=c.FLOAT,
     default=10.0,
     show_default=True,
 )
@@ -339,7 +373,7 @@ saved graphs.  ), output format (e.g. nx, sg)
     "--rsa",
     "--rsa-threshold",
     help="The RSA threshold of the motif",
-    type=float,
+    type=c.FLOAT,
     default=0.0,
     show_default=True,
 )
@@ -380,7 +414,7 @@ def main(
     download,
 
     # PARAMETERS:
-    output_format,
+    graph_format,
     num_psites,
     radius,
     rsa,
@@ -388,17 +422,28 @@ def main(
     edge_features,
     config,
 ):
+    # TODO: check that the phosphosite used in graphein construction IS IN FACT
+    # the same residue that we see from the phosphosite.  Check for 'off by 1' error?
+
+
+    # TODO: check for duplicates (i.e. same kinase, same graph motif position )
+
+    verbose = True # TODO: Remove this
+
 
     if debug: 
         verbose = True
-    
 
     if is_dryrun:
-        raise NotImplementedError(f"--dryrun not implemented yet. ")
+        verbose = False
+
     
-    if output_format.lower() in ["sg", "stellargraph"]:
+
+    
+    
+    if graph_format.lower() in ["sg", "stellargraph"]:
         output_format = "sg"
-    elif output_format.lower() in ["networkx", "nx"]:
+    elif graph_format.lower() in ["networkx", "nx"]:
         output_format = "nx"
     else:
         raise NotImplementedError(f"Output format '{output_format}' not implemented.")
@@ -435,15 +480,41 @@ def main(
      
     # TODO: check if filename exists.  Prompt for new one / overwrite. 
 
-    print(f"Output file is {out_path}.")
-
+    print("\nGRAPH LOADER\n------------")
+    
+    if verbose: print(f"Output file is {out_path}.")
 
     # Handle features
     node_features = [f.strip() for f in node_features.split(',')]
     #edge_features = [f.strip() for f in edge_features.split(',')]
 
-    print(f"Using node features {node_features}")
-    return
+    if verbose: print(f"Using node features: {node_features}")
+
+    
+    if is_dryrun:
+        n = num_psites if num_psites > 0 else "all"
+        download_status = f"Will attempt to download PDB files into {structures}" if download else "Skipping download from AF2"
+        print(f"""
+        {download_status}
+
+        Output file is {out_path}.
+
+        Create {n} graphs from dataset {phosphosite}. 
+        Radius threshold:\t{radius}
+        RSA threshold:\t{rsa}
+        Format:\t{graph_format}
+
+        Features:
+        \tNodes:\t{node_features}
+        \tEdges:\t
+
+
+    
+        """)
+
+        raise NotImplementedError(f"--dryrun not implemented yet. ")
+        exit
+    
     
 
     graphs = load_graphs(
@@ -453,6 +524,7 @@ def main(
         rsa_threshold=rsa,
         num_psites=num_psites,
         download=download,
+        node_features=node_features
     )
 
     print(f"Created {len(graphs.values())} graphs with radius {radius} and RSA {rsa}")
@@ -466,7 +538,7 @@ def main(
         
         if verbose: print(f"Converting graphs to StellarGraph instances...", end=" ") 
 
-        graphs = nx_to_sg(graphs)
+        graphs = nx_to_sg(graphs, include_features=node_features)
 
         if verbose: print(f"DONE.")
 

@@ -20,6 +20,7 @@ import re
 
 from graphein.protein.subgraphs import extract_k_hop_subgraph
 from graphein.utils.utils import import_message
+import graphein.protein.edges.distance as g_dist
 
 # imports from visualisation.py
 from graphein.protein.visualisation import colour_nodes, colour_edges
@@ -545,6 +546,10 @@ def motif_asteroid_plot(
 
     nodes: Dict[int, List[str]] = {0: [node_id]}
     node_list: List[str] = [node_id]
+
+    # Add distance-based edges to graph
+    #g = g_dist.add_distance_threshold(g, long_interaction_threshold=1, threshold=3)
+
     # Iterate over the number of hops and extract nodes in each shell
     for i in range(1, k):
         subgraph = extract_k_hop_subgraph(g, node_id, k=i)

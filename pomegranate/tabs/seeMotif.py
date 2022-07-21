@@ -3,6 +3,7 @@ from dash import Dash, dcc, html, callback, Input, Output
 import plotly.express as px
 import pandas as pd
 import numpy as np
+import math
 
 from protein.phosphosite import *
 from protein.phosphosite import get_surface_motif
@@ -73,11 +74,12 @@ Phosphosite dropdown menu
 @callback(
     Output('selected-psite-dropdown', 'options'),
     Input('selected-psite-residue-types', 'value'),
+    Input('asa-threshold-slider', 'value')
     )
-def update_psite_dropdown(residues):
+def update_psite_dropdown(residues, rsa_threshold):
     
     g1 = g.copy()
-    return get_phosphosites(g1, residues)
+    return get_phosphosites(g1, residues, rsa_threshold)
 
 
 '''
@@ -107,15 +109,17 @@ def update_graphs(radius, asa_threshold, psite, axis_order):
     adj_mat = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order)
     
     # Update asteroid plot
+    # Distance edges between AAs closer than 3 A -> so k = radius/3
+    k = math.ceil(radius/3)
     ast_plt = motif_asteroid_plot(
-        g=g1,
+        g=s_g,
         node_id=psite,
         size_nodes_by="rsa",
         node_size_multiplier=80,
         colour_nodes_by="hydrophobicity",
         width=435,
         height=400,
-        k=3
+        k=k
     )
 
     return [adj_mat, ast_plt]

@@ -25,7 +25,7 @@ from graphein.protein.visualisation import plot_distance_matrix, plotly_protein_
 from graphein.protein.subgraphs import extract_subgraph_from_point, extract_k_hop_subgraph, extract_subgraph, extract_surface_subgraph
 
 
-from graphein.protein.edges.distance import *	
+import graphein.protein.edges.distance as g_dist
 
 # Custom plot function
 from visualisation.plot import motif_plot_distance_matrix
@@ -44,11 +44,12 @@ TODO:
 '''
 Return phosphosites (sorted)
 '''
-def get_phosphosites(g, residues=['SER', 'THR', 'TYR', 'HIS']):
+def get_phosphosites(g, residues=['SER', 'THR', 'TYR', 'HIS'], rsa_threshold=0.5):
     
     psites = extract_subgraph(g, 
                                 return_node_list=True,
-                                residue_types=residues)
+                                residue_types=residues,
+                                rsa_threshold=rsa_threshold)
     
     psites_sorted = sorted(psites, key=lambda x: int(x.split(':')[-1]))
     return psites_sorted
@@ -66,14 +67,14 @@ def get_protein_graph(id=None, use_alphafold=True, config=None):
         use_alphafold = False 
         # Edge functions
         edge_fns = [
-            add_aromatic_interactions,
-            add_hydrophobic_interactions,
-            add_aromatic_sulphur_interactions,
-            add_cation_pi_interactions,
-            add_disulfide_interactions,
-            add_hydrogen_bond_interactions,
-            add_ionic_interactions,
-            add_peptide_bonds
+            g_dist.add_aromatic_interactions,
+            g_dist.add_hydrophobic_interactions,
+            g_dist.add_aromatic_sulphur_interactions,
+            g_dist.add_cation_pi_interactions,
+            g_dist.add_disulfide_interactions,
+            g_dist.add_hydrogen_bond_interactions,
+            g_dist.add_ionic_interactions,
+            g_dist.add_peptide_bonds
             ]
 
         # Use structure path of already downloaded PDB file (if it exists) for DSSP calculation.

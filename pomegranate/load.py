@@ -44,6 +44,20 @@ from definitions import STRUCTURE_PATH
 from traitlets import default
 from validate import get_database
 
+
+
+"""
+String printing functions
+"""
+def print_spacer(
+    string: str, 
+    num: int,
+):
+    print("")
+    print("-" * num)
+    print(string)
+    print("-" * num)
+
 # TODO: use Path types instead of strs
 def load_graphs(
     pdb_path: str = None,       # directory containing local pdb files
@@ -164,6 +178,10 @@ def load_graphs(
         pdb_dir=pdb_dir,
     )
 
+    n = 133
+    print_spacer("CONSTRUCTING GRAPHS", n)
+    
+
     stats = dict(num_fail=0, num_success=0, num_skip=0)
     for idx, row in df.iterrows():
 
@@ -186,12 +204,12 @@ def load_graphs(
         if not path.is_file():
             stats['num_skip'] += 1
             if verbose:
-                print(f"[{index}] No structure file {pdb_path} -- Skipping...")
+                print(f"[{index:4d}] No structure file {pdb_path} -- Skipping...")
         else:
             if verbose:
-                print(f"[{index}] Constructing graph from {acc}...", end=" ")
+                print(f"[{index:4d}] Constructing graph from {acc}...", end=" ")
             
-            try: 
+            
                 g = construct_graph(config, pdb_path=pdb_path) 
 
                 pos: int = int(res_pos)
@@ -199,7 +217,6 @@ def load_graphs(
 
                 psite: Dict = g.nodes(data=True)[res]
                 
-
                 psite_res: str = str(psite['residue_name'])
                 psite_num: int = int(psite['residue_number'])
 
@@ -213,7 +230,6 @@ def load_graphs(
                 g.name += f" @ {pos} {res_code}"
 
 
-                
                 # Assert that phosphosiste is included in the graph.  
                 # TODO: display green on the terminal output if it is included; 
                 # Display red on terminal if it is excluded (and --force was used.)
@@ -223,21 +239,24 @@ def load_graphs(
 
                 psite_contained = res in list(g.nodes())
 
-
+             
                 stats['num_success'] += 1
                 
                 if debug:
-                    print(f"[{index}] Constructing graph from {acc}...", end=" ")
+                    print(f"[{index:4d}] Constructing graph from {acc}...", end=" ")
                     
 
                     if psite_contained: print('\x1b[6;30;42m' + '[PSITE]' + '\x1b[0m', end=" ")
                     else: print('\x1b[1;37;41m' + '[PSITE]' + '\x1b[0m', end=" ")
-                    print(f"DONE.  Graph {graphs[index]['graph'].name} | PSITE: {res} | KINASE: {kinase}", end="")
+                    num_nodes = len(list(graphs[index]['graph'].nodes))
+                    print(f"DONE.  Graph {graphs[index]['graph'].name:15s} with {num_nodes:3d} nodes | PSITE: {res:10s} | KINASE: {kinase:10s}", end="")
 
                     #print(f"\t{'YES' if psite_contained else 'NO'}", end=" ")
                 if verbose:
                     print("")
-                
+
+            try:
+                pass   
             except:
                 graphs[index] = None
                 stats['num_fail'] += 1

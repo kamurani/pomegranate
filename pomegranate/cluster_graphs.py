@@ -179,7 +179,7 @@ def nx_to_sg(
                 
                 n['feature'] = list(flatten([disp[f](n) for f in include_features]))
 
-                print(f"Feature: {n['feature']}")
+                #print(f"Feature: {n['feature']}")
                 
                 # WHY DOESN'T THIS WORK? TODO
                 #node_data['feature'] = [*disp[f](n) if is_iterable(disp[f](n)) else disp[f](n) for f in features]

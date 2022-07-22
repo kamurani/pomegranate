@@ -4,20 +4,21 @@
 
 **P**h**o**sphosite **m**otif **e**xplorer -- **gra**ph **n**etwork **a**bstraction **t**hrough **e**mbeddings 
 
-Pomegranate interactively explores phosphosite motifs on protein structures.
+Pomegranate interactively explores phosphosite motifs on protein structures through a web application. 
+
+Clustering of protein graphs is also possible through a command line interface.
 
 ![](./imgs/POMEGRANATE-LOGO.png)
 
 
 
 
-### Download structure from AlphaFold
+### AF2 Structure database
 ![](./imgs/alphafold_comparison.gif)
 
-### Extract structural motif for a given radius
-
-
 ## Installation 
+
+TODO: upload to PyPI
 
 ### Dependencies
 
@@ -45,7 +46,6 @@ sudo apt-get install dssp
 
 
 ## Usage 
-
 
 ### Clustering pipeline 
 
@@ -132,6 +132,9 @@ Options:
   --help                          Show this message and exit.
 ```
 
+Example clustering:
+
+[](./imgs/embeddings.png)
 
 #### Cluster embeddings
 

@@ -94,7 +94,8 @@ Options:
 
 #### Learn protein representations 
 
-```bash
+```
+$ pomegranate learn --help
 Usage: pomegranate learn [OPTIONS] GRAPHS
 
 Options:

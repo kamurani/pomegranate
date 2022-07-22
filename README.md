@@ -116,7 +116,7 @@ E.g.
 - node classification layer (semi-supervised)
 etc.
 
-#### Visualise embeddings
+#### Visualise 
 
 ```
 Usage: visualise_embeddings.py [OPTIONS] EMBEDDINGS OUTDIR
@@ -134,7 +134,7 @@ Options:
 
 Example clustering:
 
-[](./imgs/embeddings.png)
+![](./imgs/embeddings.png)
 
 #### Cluster embeddings
 

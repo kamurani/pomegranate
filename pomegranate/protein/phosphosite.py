@@ -153,7 +153,10 @@ def get_protein_subgraph_radius(g=None, site=1, r=10):
     # get centre point
     #index = query['phosphosite'] - 1
     index = site - 1
-    phos_point = tuple(g.graph['coords'][index])
+    phos_point = np.array(g.graph['coords'][index]) #TODO: TURN BACK TO TUPLE IF LIST DOEESN'T WORK
+
+    print(phos_point)
+
     
     # Get subgraph
     s_g = extract_subgraph_from_point(g, centre_point=phos_point, 

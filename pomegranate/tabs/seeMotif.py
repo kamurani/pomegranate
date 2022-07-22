@@ -151,6 +151,9 @@ def update_graph(radius, asa_threshold, psite, axis_order, graph):
     tmp = json.loads(graph)
     g = nx.json_graph.node_link_graph(tmp)
     g1 = g.copy()
+
+    g1.graph["pdb_df"] = pd.read_json(g1.graph["pdb_df"])
+    g1.graph["coords"] = np.array(g1.graph["coords"])
     
     if not psite:
         psite = get_phosphosites(g1)[0]

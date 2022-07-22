@@ -14,7 +14,21 @@ Pomegranate interactively explores phosphosite motifs on protein structures.
 ### Download structure from AlphaFold
 ![](./imgs/alphafold_comparison.gif)
 
+Alternative databases are also supported.  
+
+Local PDB files can also be used (IN PROGRESS)
+
+### Structural motif clustering 
+
+[Compressed proteome downloads](https://alphafold.ebi.ac.uk/download) 
+
+
+
+Currently using *[Saccharomyces cerevisiae](https://ftp.ebi.ac.uk/pub/databases/alphafold/latest/UP000002311_559292_YEAST_v2.tar)* 
+
 ### Extract structural motif for a given radius
+
+
 
 
 ## Installation 

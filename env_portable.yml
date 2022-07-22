@@ -1,0 +1,13 @@
+name: 3dmotifs
+channels:
+  - schrodinger
+  - conda-forge
+  - defaults
+dependencies:
+  - numpy
+  - pymol
+  - python=3.8
+  - dssp
+  - dash
+  - graphein
+prefix: /opt/anaconda3/envs/3dmotifs

@@ -51,7 +51,9 @@ sudo apt-get install dssp
 
 #### Load and download PDB files using phosphosite database
 
-```bash
+![](./imgs/graph-construct-1.gif)
+
+```
 $ pomegranate load --help
 Usage: pomegranate load [OPTIONS] PHOSPHOSITE STRUCTURES GRAPHS
 

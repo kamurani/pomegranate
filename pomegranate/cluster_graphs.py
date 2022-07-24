@@ -1,9 +1,9 @@
 #! /usr/bin/env python3
-"""Load graphs from list of PDB files"""
+"""Create embeddings from protein graphs."""
 
 
 """
-usage: python load.py ../datasets/yeast_full.txt structures/yeast-AF2 saved_graphs
+Usage: python cluster_graphs.py [OPTIONS] GRAPHS
 """
 
 import collections

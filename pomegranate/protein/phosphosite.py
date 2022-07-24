@@ -124,9 +124,13 @@ def get_surface_motif(
     r: float = 10.0, 
     asa_threshold: float = 0.5,
 ):
-
+    res = list(g.nodes())[site-1]
+    #print("res is", res)
+    psite_node = g.nodes(data=True)[res]
     
     s_g = get_protein_subgraph_radius(g=g, site=site, r=r)
+
+
 
     if asa_threshold:
         try:
@@ -136,8 +140,11 @@ def get_surface_motif(
             )
         except:
             raise ValueError("Specified graph does not have RSA metadata.")
+
+        #surface.add_node(psite_node) # Restore psite node if it was removed
         return surface
     else:
+        #s_g.nodes(data=True)[res] = psite_node
         return s_g # Don't consider surface if asa is None
 
     

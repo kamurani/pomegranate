@@ -66,6 +66,18 @@ from validate import get_database
     'embeddings', nargs=1,
 
 )
+@c.argument(
+    'outdir', nargs=1,
+
+)
+@c.option(
+    "-N",
+    "--num-plots",
+    help="How many plots to output.",
+    type=c.INT,
+    default=1, 
+    show_default=True,
+)
 @c.option(
     # TODO: support multiple ? i.e. PCA first?
     "--dim-method",
@@ -78,9 +90,14 @@ from validate import get_database
 @c.option(
     "--labels/--no-labels",
     "-l",
-    metavar="<label_graph>",
     default=True,
     help="Show labels on plot."
+)
+@c.option(
+    "-i",
+    "--interactive",
+    is_flag=True,
+    help="Open interactive plot viewer.",
 )
 @c.option(
     "-v", 
@@ -92,27 +109,32 @@ from validate import get_database
 def main(
     # POSITIONAL ARGUMENTS
     embeddings,
+    outdir,
 
     # OPTIONAL ARGUMENTS
+    num_plots,
 
     # OPTIONS
     dim_method,
-    label_graph,
+    labels,
+    interactive,
     verbose,
 ):
     verbose = True # TODO: remove
 
+    label_graph = labels # rename variable
 
     in_path = Path(embeddings)
+    out_dir = Path(outdir)
 
     
 
     # TODO: autodetect which file to use as infile, if directory is given.
-    """
-    if not graph_path.is_dir():
-        raise ValueError(f"No such directory {graph_path}")
     
-     
+    if not out_dir.is_dir():
+        raise ValueError(f"No such directory {out_dir}")
+    
+    """
     filename = "graph_objects"
     in_path = os.path.join(graph_path, filename)
 
@@ -122,10 +144,14 @@ def main(
     if not in_path.is_file():
         raise ValueError(f"Specified path {embeddings} is not a file.")
 
-    parent = os.path.dirname(in_path)
-    save_path = os.path.join(parent, "vis_plot.png")
 
-    print(f"Input file is {in_path}.")
+    basename = os.path.basename(in_path)
+    parent = os.path.dirname(in_path)
+    save_path = os.path.join(out_dir, f"{basename}_PLOT_X.png")
+
+    print(f"Input file is {in_path}.  Saving plots to {save_path}")
+
+    
 
     # Unpickle
     if verbose: print(f"Loading...", end=" ")
@@ -137,7 +163,7 @@ def main(
     labels      = data['labels']
 
 
-    if verbose: print(f"Loaded embeddings of shape {embeddings.shape}, labels of shape {labels.shape}")
+    if verbose: print(f"Loaded embeddings of shape {embeddings.shape}, labels of length {len(labels)}")
 
     """
     for node_id, node_data in g.nodes(data=True):
@@ -162,37 +188,62 @@ def main(
     # Plot 
     if dim_method.lower() == "tsne":
         from sklearn.manifold import TSNE
-        tsne = TSNE(2, learning_rate='auto')
+        tsne = TSNE(
+            2, 
+            init='pca', # 'random'
+            learning_rate='auto'
+        )
         two_d = tsne.fit_transform(embeddings)
     else:
         raise NotImplementedError(f"Dimensionality reduction using '{dim_method}' not implemented.")
 
     from matplotlib import pyplot as plt
 
-    fig, ax = plt.subplots()
 
-    plt.scatter(
-        two_d[:, 0], 
-        two_d[:, 1],
-        c=group,
-        label=group,
-        alpha=0.6
-    )
 
-    if label_graph:
-        for i, l in enumerate(labels):
-            plt.text(
-                x=two_d[i,0],
-                y=two_d[i,1],
-                s=l,
-            )
+    for i in range(num_plots):
 
-    #for i, txt in enumerate(graph_labels):
-    #    ax.annotate(txt, two_d[i, 0], two_d[i, 1])
+        fig, ax = plt.subplots()
 
-    plt.show()
-    plt.savefig('EMBEDDINGS_PLOT.png')
+        # TSNE random
+        tsne = TSNE(
+            2, 
+            init='random',
+            learning_rate='auto'
+        )
+        two_d = tsne.fit_transform(embeddings)
 
+        plt.scatter(
+            two_d[:, 0], 
+            two_d[:, 1],
+            c=group,
+            label=group,
+            alpha=0.6
+        )
+
+        if label_graph:
+            for i, l in enumerate(labels):
+                plt.text(
+                    x=two_d[i,0],
+                    y=two_d[i,1],
+                    s=l,
+                )
+
+        #for i, txt in enumerate(graph_labels):
+        #    ax.annotate(txt, two_d[i, 0], two_d[i, 1])
+
+        save_path = os.path.join(out_dir, f"{basename}_PLOT_{i}.png")
+        if verbose: print(f"[{i}] Saving...", end=" ")
+        try:
+            plt.savefig(save_path)
+            if verbose: print(f"DONE at {save_path}")
+        except:
+            if verbose: print(f"FAILED.")
+
+    if interactive:
+        plt.show()
+    
+    return
 
     
     

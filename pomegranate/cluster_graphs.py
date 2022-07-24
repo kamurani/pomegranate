@@ -172,34 +172,15 @@ def nx_to_sg(
         # Check features given
         for f in include_features: assert f in disp.keys(), f"Unknown node feature {f}"
 
-        for node_id, node_data in g.nodes(data=True):
+        for node_id, n in g.nodes(data=True):
             
-            n = node_data
-            if True:
-                
-                n['feature'] = list(flatten([disp[f](n) for f in include_features]))
+            n['feature'] = list(flatten([disp[f](n) for f in include_features]))
 
                 #print(f"Feature: {n['feature']}")
                 
                 # WHY DOESN'T THIS WORK? TODO
                 #node_data['feature'] = [*disp[f](n) if is_iterable(disp[f](n)) else disp[f](n) for f in features]
-
-            else:
-
-                # Get list of numerical features
-                m = node_data["meiler"] # node's meiler embedding
-                node_loc = np.array(node_data["coords"])    # node's euclidean coords
-                dist_to_psite = np.linalg.norm(node_loc - psite_coords) # node's distance to psite
-                
-                rsa = node_data["rsa"]  # node's relative solvent accessibility
-                b_fac = node_data["b_factor"]   # node's temperature 
-                
-                #feature = [*m, *c, rsa]
-                #feature = [dist_to_psite, rsa, b_fac, *m]  # 10 long   
-                
-                feature = [dist_to_psite, rsa, b_fac, m[2], m[3], m[4], m[5]]  # 10 long 
-                #node_data["feature"] = feature  # create new 'feature' vector to be accessed by StellarGraph instance
-            
+     
         # Create sg instance from graph, using `feature` vector. 
         g_attr = StellarGraph.from_networkx(g, node_features="feature")
 

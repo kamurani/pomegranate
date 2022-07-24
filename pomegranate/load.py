@@ -53,6 +53,10 @@ from validate import get_database
 # radius every time we need to, on the fly.
 
 
+# TODO: write graphs to file as we go, so if it breaks, halfway through we don't lose what we've already done
+# Also will not suffer from 'out of memory' if we use too many graphs. 
+
+
 # TODO
 class GraphDict:
     pass

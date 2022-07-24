@@ -44,6 +44,18 @@ from definitions import STRUCTURE_PATH
 from traitlets import default
 from validate import get_database
 
+# TODO: index each graph not with index (but still save index as an array of row numbers 
+# so we can map back to original psite database); but rather with index = (f"{PDB_ID}", f"{PSITE_NODE}"")
+# This way we can check if we have already created a motif graph with this identical id and center 
+# note: may have to either index with, or check (using an attribute within graph dict object) what 
+# the threshold RSA / RADIUS is.    
+# OR, alternatively, just generate graphs with MAX_RADIUS and simply get the subgraph with a smaller
+# radius every time we need to, on the fly.
+
+
+# TODO
+class GraphDict:
+    pass
 
 
 """
@@ -209,7 +221,7 @@ def load_graphs(
             if verbose:
                 print(f"[{index:4d}] Constructing graph from {acc}...", end=" ")
             
-            
+            try:
                 g = construct_graph(config, pdb_path=pdb_path) 
 
                 pos: int = int(res_pos)
@@ -255,8 +267,8 @@ def load_graphs(
                 if verbose:
                     print("")
 
-            try:
-                pass   
+            
+                  
             except:
                 graphs[index] = None
                 stats['num_fail'] += 1

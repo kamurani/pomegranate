@@ -99,7 +99,7 @@ def update_graphs(radius, asa_threshold, psite, axis_order):
     g1 = g.copy()
     
     if not psite:
-        psite = get_phosphosites(g1)[0]
+        psite = get_phosphosites(g1, residues=['SER','THR','TYR'])[0]
     
     s_g = get_surface_motif(g1, site=psite, r=radius, asa_threshold=asa_threshold)
     # update figure 
@@ -110,9 +110,9 @@ def update_graphs(radius, asa_threshold, psite, axis_order):
     
     # Update asteroid plot
     # Distance edges between AAs closer than 3 A -> so k = radius/3
-    k = math.ceil(radius/3)
+    k = math.floor(radius/3)
     ast_plt = motif_asteroid_plot(
-        g=s_g,
+        g=g1,
         node_id=psite,
         size_nodes_by="rsa",
         node_size_multiplier=80,

@@ -46,10 +46,10 @@ Return phosphosites (sorted)
 '''
 def get_phosphosites(g, residues=['SER', 'THR', 'TYR', 'HIS'], rsa_threshold=0.5):
     
-    psites = extract_subgraph(g, 
-                                return_node_list=True,
-                                residue_types=residues,
-                                rsa_threshold=rsa_threshold)
+    surface_nodes = extract_subgraph(g, rsa_threshold=rsa_threshold)
+    psites = extract_subgraph(surface_nodes,
+                            return_node_list=True,
+                            residue_types=residues)
     
     psites_sorted = sorted(psites, key=lambda x: int(x.split(':')[-1]))
     return psites_sorted

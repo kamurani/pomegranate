@@ -119,17 +119,14 @@ def get_protein_graph(id=None, use_alphafold=True, config=None):
 Given graph ``g`` get subgraph within radius of psite, and surface residues above 
 ASA threshold. 
 '''
-def get_surface_motif(g=None, site=1, r=10, asa_threshold=0.5):
+def get_surface_motif(g, site, r=10, asa_threshold=0.5):
 
     
     s_g = get_protein_subgraph_radius(g=g, site=site, r=r)
 
     if asa_threshold:
         try:
-            surface = extract_surface_subgraph(s_g, asa_threshold, 
-                                                recompute_distmat=True,
-                                                filter_dataframe=True
-            )
+            surface = extract_surface_subgraph(s_g, asa_threshold)
         except:
             raise ValueError("Specified graph does not have RSA metadata.")
         return surface
@@ -141,24 +138,21 @@ def get_surface_motif(g=None, site=1, r=10, asa_threshold=0.5):
 '''
 Given a graph ``g`` get a subgraph from radius and known phos site
 '''
-def get_protein_subgraph_radius(g=None, site=1, r=10):
+def get_protein_subgraph_radius(g, site, r=10):
    
-    if isinstance(site, str):
-        try:
-            site = int(site.split(':')[-1])
-        except ValueError:
-            raise ValueError("Specified phospho site isn't in correct format.")            
+    try:
+        x_y_z = node_coords(g, site)
+    except ValueError:
+        raise ValueError("Specified phospho site isn't in correct format.")            
         
     # get centre point
     #index = query['phosphosite'] - 1
-    index = site - 1
-    phos_point = tuple(g.graph['coords'][index])
+    # index = site - 1
+    # phos_point = tuple(g.graph['coords'][index])
+    # print(f'Coordinates from graph["coords"]: {tuple(g.graph["coords"][index])}')
     
     # Get subgraph
-    s_g = extract_subgraph_from_point(g, centre_point=phos_point, 
-                                        radius=r, 
-                                        recompute_distmat=True, 
-                                        filter_dataframe=True)
+    s_g = extract_subgraph_from_point(g, centre_point=x_y_z, radius=r)
     
     return s_g
     
@@ -173,3 +167,18 @@ def get_adjacency_matrix_plot(g=None, psite=1, title=None, order='seq'):
     #fig = plot_distance_matrix(g, title=title)
     fig = motif_plot_distance_matrix(g, psite=psite, title=title, aa_order=order)
     return fig
+
+# Get x, y, z coordinates from a given node in a graph
+# Input: - Graph g
+#        - str node (e.g. 'A:ARG:1')
+# Output: tuple (x, y, z)
+def node_coords(g, node):
+
+    print (g.graph)
+    df = g.graph['pdb_df']
+
+    coords = df.loc[df.node_id == node][['x_coord','y_coord','z_coord']]
+    if not coords.empty:
+        return coords.values[0]
+    else:
+        return None

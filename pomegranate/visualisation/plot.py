@@ -703,6 +703,8 @@ def ordered_distmat(g: nx.graph, order: str) -> pd.DataFrame:
     eucl_dists.columns = pdb_df.node_id
 
     cur_order = list(g.nodes)
+    # TODO: seems to be issue where g.nodes isn't consistent with g.graph['pdb_df'].
+    # TODO: need to work out why/where one is being modified and not the other.
     print (f'Length of pdb_df: {len(pdb_df)}')
     print (f'Length of g.nodes: {len(cur_order)}')
 

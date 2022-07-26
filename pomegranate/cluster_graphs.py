@@ -183,10 +183,8 @@ def nx_to_sg(
      
         # Create sg instance from graph, using `feature` vector. 
         g_attr = StellarGraph.from_networkx(g, node_features="feature")
-
         # Create 'graph' dict
         out_graphs[idx] = dict(graph=g_attr, res=res, psite=psite, kinase=kinase)
-        
         graph_labels.append(kinase) # unused for now
 
     return out_graphs
@@ -264,6 +262,14 @@ def test_labels_list(graphs: List, labels: List):
     'graphs', nargs=1,
 )
 @c.option(
+    "--train-method",
+    type=c.Choice(['graph', 'node'], case_sensitive=False),
+    help="Method to use for training the graph neural network.",
+    default="node",
+    show_default=True,
+
+)
+@c.option(
     "-e",
     "--epochs",
     help="Number of epochs to train for.",
@@ -289,17 +295,19 @@ def test_labels_list(graphs: List, labels: List):
 #@c.argument('graphs', nargs=1)
 def main(
     graphs,
+    train_method,
     epochs,
     batch_size,
     verbose,
 ):
     verbose = True # TODO: remove
 
-
     graph_path = Path(graphs)
 
-    
+    if train_method == "graph": train_method = "gcn-graph-classification"
+    elif train_method == "node": train_method = "node-classification"
 
+    
     # TODO: autodetect which file to use as infile, if directory is given.
     """
     if not graph_path.is_dir():
@@ -358,81 +366,97 @@ def main(
 
 
     test_labels_list(graph_dicts, graph_labels)
+
+    print(graphs[0].nodes()[0])
+
     
-    # Generator
-    generator = sg.mapper.PaddedGraphGenerator(graphs)
 
-    # Model
-    layers = [32, 32, 16]
-    act = "relu"
-    activations = [act for i in range(len(layers))]
-    gc_model = sg.layer.GCNSupervisedGraphClassification(
-        #[32, 16, 8], ["relu", "relu", "relu"], generator, pool_all_layers=True
-        layers, activations, generator, pool_all_layers=True,
-        #dropout=0.5,
-    )
 
-    if verbose: 
-        print(f"MODEL\n-----")
-        print(f"LAYERS:\t\t{layers}")
-        print(f"ACTIVATIONS:\t{activations}")
+    # Train using different methods
 
-    inp1, out1 = gc_model.in_out_tensors()
-    inp2, out2 = gc_model.in_out_tensors()
-
-    vec_distance = tf.norm(out1 - out2, axis=1)
-
-    pair_model = keras.Model(inp1 + inp2, vec_distance)
-    embedding_model = keras.Model(inp1, out1)
-
-    def graph_distance(graph1, graph2):
-        spec1 = nx.laplacian_spectrum(graph1.to_networkx(feature_attr="feature"))
-        spec2 = nx.laplacian_spectrum(graph2.to_networkx(feature_attr="feature"))
-        k = min(len(spec1), len(spec2))
-        dist = np.linalg.norm(spec1[:k] - spec2[:k])
-        #print(f"Dist: {dist}")
-        return dist 
-
-    num_samples = 800
-    graph_idx = np.random.RandomState(42).randint(len(graphs), size=(num_samples, 2))
-
-    targets = [graph_distance(graphs[left], graphs[right]) for left, right in graph_idx]
-
-    train_gen = generator.flow(graph_idx, batch_size=batch_size, targets=targets)
-
-    pair_model.compile(keras.optimizers.Adam(1e-2), loss="mse")
+    if train_method == "gcn-graph-classification":
     
-    if verbose:
-        print("-----------------")
-        print(f"Starting training on {num_samples} samples for {epochs} epochs...")
-    
-    start = time.time()
-    history = pair_model.fit(train_gen, epochs=epochs, verbose=verbose) 
-    end = time.time()
-    #sg.utils.plot_history(history)
+        # Generator
+        generator = sg.mapper.PaddedGraphGenerator(graphs)
 
-    if verbose:
-        print("-----------------")
-        print(f"Completed training after {end - start} seconds.\n")
+        # Model
+        layers = [32, 32, 16]
+        act = "relu"
+        activations = [act for i in range(len(layers))]
+        gc_model = sg.layer.GCNSupervisedGraphClassification(
+            #[32, 16, 8], ["relu", "relu", "relu"], generator, pool_all_layers=True
+            layers, activations, generator, pool_all_layers=True,
+            #dropout=0.5,
+        )
 
-    if verbose: print(f"Generating embeddings...", end=" ")
-    embeddings = embedding_model.predict(generator.flow(graphs))
-    if verbose: print(f"DONE.")
-    print(f"Embeddings have shape {embeddings.shape}")
+        if verbose: 
+            print(f"MODEL\n-----")
+            print(f"LAYERS:\t\t{layers}")
+            print(f"ACTIVATIONS:\t{activations}")
 
-    # Save embeddings 
-    data = dict(
-        embeddings=embeddings,
-        labels=graph_labels
-    )
-    if verbose: print("Saving embeddings...", end=" ")
-    outfile =  open(save_path, 'wb')
-    pickle.dump(data, outfile)
-    outfile.close()
-    if verbose: print(f"DONE.")
-    print(f"Saved embeddings at {save_path}.")
+        inp1, out1 = gc_model.in_out_tensors()
+        inp2, out2 = gc_model.in_out_tensors()
 
-    return
+        vec_distance = tf.norm(out1 - out2, axis=1)
+
+        pair_model = keras.Model(inp1 + inp2, vec_distance)
+        embedding_model = keras.Model(inp1, out1)
+
+        def graph_distance(graph1, graph2):
+            spec1 = nx.laplacian_spectrum(graph1.to_networkx(feature_attr="feature"))
+            spec2 = nx.laplacian_spectrum(graph2.to_networkx(feature_attr="feature"))
+            k = min(len(spec1), len(spec2))
+            dist = np.linalg.norm(spec1[:k] - spec2[:k])
+            #print(f"Dist: {dist}")
+            return dist 
+
+        num_samples = 800
+        graph_idx = np.random.RandomState(42).randint(len(graphs), size=(num_samples, 2))
+
+        targets = [graph_distance(graphs[left], graphs[right]) for left, right in graph_idx]
+
+        train_gen = generator.flow(graph_idx, batch_size=batch_size, targets=targets)
+
+        pair_model.compile(keras.optimizers.Adam(1e-2), loss="mse")
+        
+        if verbose:
+            print("-----------------")
+            print(f"Starting training on {num_samples} samples for {epochs} epochs...")
+        
+        start = time.time()
+        history = pair_model.fit(train_gen, epochs=epochs, verbose=verbose) 
+        end = time.time()
+        #sg.utils.plot_history(history)
+
+        if verbose:
+            print("-----------------")
+            print(f"Completed training after {end - start} seconds.\n")
+
+        if verbose: print(f"Generating embeddings...", end=" ")
+        embeddings = embedding_model.predict(generator.flow(graphs))
+        if verbose: print(f"DONE.")
+        print(f"Embeddings have shape {embeddings.shape}")
+
+        # Save embeddings 
+        data = dict(
+            embeddings=embeddings,
+            labels=graph_labels
+        )
+        if verbose: print("Saving embeddings...", end=" ")
+        outfile =  open(save_path, 'wb')
+        pickle.dump(data, outfile)
+        outfile.close()
+        if verbose: print(f"DONE.")
+        print(f"Saved embeddings at {save_path}.")
+
+    elif train_method == "node-classification":
+        
+        pass
+
+
+    else:
+        raise NotImplementedError(f"Model training method '{train_method}' not implemented.")
+
 
 
 if __name__ == "__main__":

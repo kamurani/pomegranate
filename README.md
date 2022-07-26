@@ -16,6 +16,25 @@ Clustering of protein graphs is also possible through a command line interface.
 ### AF2 Structure database
 ![](./imgs/alphafold_comparison.gif)
 
+
+Alternative databases are also supported.  
+
+Local PDB files can also be used (IN PROGRESS)
+
+### Structural motif clustering 
+
+[Compressed proteome downloads](https://alphafold.ebi.ac.uk/download) 
+
+
+
+Currently using *[Saccharomyces cerevisiae](https://ftp.ebi.ac.uk/pub/databases/alphafold/latest/UP000002311_559292_YEAST_v2.tar)*  \
+and *[Homo sapiens](https://ftp.ebi.ac.uk/pub/databases/alphafold/latest/UP000005640_9606_HUMAN_v2.tar)*
+
+Other bulk-download options can be found [here](https://alphafold.ebi.ac.uk/download).
+
+### Extract structural motif for a given radius
+
+
 ## Installation 
 
 TODO: upload to PyPI

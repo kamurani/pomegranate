@@ -55,8 +55,10 @@ def get_phosphosites(g, residues=['SER', 'THR', 'TYR', 'HIS']):
     
 # TODO: make this function receive a `list` of dict(id=id, site=site) 
 # this function then returns a list of graphs
-def get_protein_graph(id=None, use_alphafold=True, config=None):
+def get_protein_graph(id=None, use_alphafold=True, config=None, pdb_path=None):
     
+    
+
     # Graph configuration
     if not config:
         config = ProteinGraphConfig()   # default graph config file from graphein
@@ -76,8 +78,9 @@ def get_protein_graph(id=None, use_alphafold=True, config=None):
             add_peptide_bonds
             ]
 
-        # Use structure path of already downloaded PDB file (if it exists) for DSSP calculation.
-        pdb_path = STRUCTURE_PATH + '/' + id + '.pdb'
+        # Use structure path of already downloaded PDB file (if it exists) for DSSP calculation
+        if not pdb_path:
+            pdb_path = STRUCTURE_PATH + '/' + id + '.pdb'
 
         from graphein.protein.config import DSSPConfig
         from graphein.protein.features.nodes import rsa

@@ -1,9 +1,13 @@
+import os
 from dash import Dash, html, dcc, Input, Output
 import pandas as pd
 import plotly.express as px
 
 
-from definitions import EMBEDDINGS_PATH
+from definitions import EMBEDDINGS_PATH, STRUCTURE_HUMAN_PATH
+from visualisation.plot import motif_plot_distance_matrix
+from protein.phosphosite import get_protein_graph
+
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -15,6 +19,8 @@ Read in data
 """
 df = pd.read_csv(EMBEDDINGS_PATH)
 
+
+# TODO: read in graphs from .json savefile 
 
 app.layout = html.Div([
     html.Div([
@@ -55,15 +61,18 @@ app.layout = html.Div([
     html.Div([
         dcc.Graph(
             id='clustering-scatter',
-            hoverData={'points': [{'customdata': 'Japan'}]} # TODO
+            hoverData={'points': [{'customdata': 'DEFAULT'}]} # TODO
         )
     ], style={'width': '49%', 'display': 'inline-block', 'padding': '0 20'}),
 
+    
     # Visualisation plots
     html.Div([
         dcc.Graph(id='vis-1'),
-        dcc.Graph(id='vis-2'),
+        #dcc.Graph(id='vis-2'), # TODO, 2nd visualisation graph
     ], style={'display': 'inline-block', 'width': '49%'}),
+
+    
 
     # Slider TODO
     html.Div(dcc.Slider(
@@ -97,18 +106,16 @@ def update_graph(proteome, dim_reduction_method,
     # FOR NOW: 
     # use pre-calculated clusterings just for hover over. no real time computation yet.  static data for now. 
 
-
     xaxis_type = "Linear"
     yaxis_type = "Linear"
 
     # FILTER
     dff = df[df['Set'] == proteome] 
-    dff = df[df['Method'] == dim_reduction_method]
+    dff = dff[dff['Method'] == dim_reduction_method]
 
-    kinase_labels = dff[dff["Kinase"]].unique()
+    kinase_labels = dff["Kinase"].unique()
 
     print(kinase_labels)
-    exit
 
     fig = px.scatter(
         x=dff['X'],
@@ -116,20 +123,17 @@ def update_graph(proteome, dim_reduction_method,
         hover_name=dff['Protein ID'], #TODO: combine this with psite location to get name on hover.  with name of kinase. 
     )
 
-    """
-    fig.update_traces(customdata=dff[dff['Indicator Name'] == yaxis_column_name]['Country Name'])
+    fig.update_traces(customdata=dff['Protein ID'])
 
-    fig.update_xaxes(title=xaxis_column_name, type='linear' if xaxis_type == 'Linear' else 'log')
-
-    fig.update_yaxes(title=yaxis_column_name, type='linear' if yaxis_type == 'Linear' else 'log')
+    x_axis, y_axis = dim_reduction_method+"1", dim_reduction_method+"2"
+    fig.update_xaxes(title=x_axis, type='linear' if xaxis_type == 'Linear' else 'log')
+    fig.update_yaxes(title=y_axis, type='linear' if yaxis_type == 'Linear' else 'log')
 
     fig.update_layout(margin={'l': 40, 'b': 40, 't': 10, 'r': 0}, hovermode='closest')
-    """
+    
 
     return fig
 
-
-"""
 
 def create_time_series(dff, axis_type, title):
 
@@ -151,29 +155,53 @@ def create_time_series(dff, axis_type, title):
 
 
 @app.callback(
-    Output('x-time-series', 'figure'),
-    Input('crossfilter-indicator-scatter', 'hoverData'),
-    Input('crossfilter-xaxis-column', 'value'),
-    Input('crossfilter-xaxis-type', 'value'))
-def update_y_timeseries(hoverData, xaxis_column_name, axis_type):
-    country_name = hoverData['points'][0]['customdata']
-    dff = df[df['Country Name'] == country_name]
-    dff = dff[dff['Indicator Name'] == xaxis_column_name]
-    title = '<b>{}</b><br>{}'.format(country_name, xaxis_column_name)
-    return create_time_series(dff, axis_type, title)
+    Output('vis-1', 'figure'),
+    Input('clustering-scatter', 'hoverData'),
+    Input('which-visualisation-method', 'value'),
+    Input('visualisation-options', 'value'),
+
+)
+def update_vis_1(
+    hoverData,
+    vis_method,
+    vis_options, 
+
+):
+
+    # Load graph
+    # may have to do this from file as we go if not enough memory? 
+    #g = graphs[]
+
+    name = hoverData['points'][0]['customdata']
+
+    if name == "DEFAULT": 
+        fig = {}
+        return fig
+
+    protein_id = name.split('@')[0].strip()
+    
+
+    pdb_path = os.path.join(STRUCTURE_HUMAN_PATH, f"{protein_id}.pdb")
+
+    print(f"Constructing graph from {pdb_path}...")
+
+    g = get_protein_graph(config="rsa", pdb_path=pdb_path)
+    
+    # Subgraph 
+
+    #psite = 
 
 
-@app.callback(
-    Output('y-time-series', 'figure'),
-    Input('crossfilter-indicator-scatter', 'hoverData'),
-    Input('crossfilter-yaxis-column', 'value'),
-    Input('crossfilter-yaxis-type', 'value'))
-def update_x_timeseries(hoverData, yaxis_column_name, axis_type):
-    dff = df[df['Country Name'] == hoverData['points'][0]['customdata']]
-    dff = dff[dff['Indicator Name'] == yaxis_column_name]
-    return create_time_series(dff, axis_type, yaxis_column_name)
+    # Get figure
+    #fig = motif_plot_distance_matrix(g=g, psite=psite)
 
-"""
+    from graphein.protein.visualisation import plot_distance_matrix
+    fig = plot_distance_matrix(g)
+    return fig
+
+
+
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)

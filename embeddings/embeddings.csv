@@ -1,5 +1,9 @@
 Protein ID,Phosphosite,Kinase,Set,Method,X,Y
-Q1,"A:SER:10","kin_a","Human (known kinases)","tSNE",0,0
-Q2,"A:SER:20","kin_b","Human (known kinases)","tSNE",1,1
-Q3,"A:SER:30","kin_b","Human (known kinases)","tSNE",1.5,2.6
-Q4,"A:SER:40","kin_a","Human (known kinases)","tSNE",5.4,4
+A0AVK6,"A:SER:10","kin_a","Human (known kinases)","tSNE",0,0
+A0FGR8,"A:SER:20","kin_b","Human (known kinases)","tSNE",1,1
+A0JLT2,"A:SER:30","kin_b","Human (known kinases)","tSNE",1.5,2.6
+A0JNW5,"A:SER:40","kin_a","Human (known kinases)","tSNE",5.4,4
+
+
+
+

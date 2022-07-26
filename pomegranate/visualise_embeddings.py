@@ -161,6 +161,7 @@ def main(
 
     embeddings  = data['embeddings']
     labels      = data['labels']
+    proteins    = data['proteins']
 
 
     if verbose: print(f"Loaded embeddings of shape {embeddings.shape}, labels of length {len(labels)}")

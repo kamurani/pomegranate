@@ -32,7 +32,7 @@ import click as c
 
 
 import stellargraph as sg
-from stellargraph import StellarGraph
+#from stellargraph import StellarGraph
 
 import pandas as pd
 import numpy as np
@@ -300,6 +300,9 @@ def main(
     batch_size,
     verbose,
 ):
+
+    sg.StellarGraph
+    
     verbose = True # TODO: remove
 
     graph_path = Path(graphs)
@@ -369,6 +372,9 @@ def main(
 
     print(graphs[0].nodes()[0])
 
+    print(graph_dicts[0])
+
+    return
     
 
 
@@ -440,7 +446,8 @@ def main(
         # Save embeddings 
         data = dict(
             embeddings=embeddings,
-            labels=graph_labels
+            labels=graph_labels,
+            proteins=protein_ids,
         )
         if verbose: print("Saving embeddings...", end=" ")
         outfile =  open(save_path, 'wb')

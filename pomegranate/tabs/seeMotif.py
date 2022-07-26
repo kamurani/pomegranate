@@ -7,6 +7,7 @@ import math
 
 from protein.phosphosite import *
 from protein.phosphosite import get_surface_motif
+from protein.interactions import add_distance_threshold
 
 from visualisation.plot import motif_asteroid_plot
 
@@ -109,8 +110,11 @@ def update_graphs(radius, asa_threshold, psite, axis_order):
     adj_mat = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order)
     
     # Update asteroid plot
+    # Add edges to graph by distance
+    ast_g = add_distance_threshold(s_g, long_interaction_threshold=1, threshold=4.1)
     # Distance edges between AAs closer than 3 A -> so k = radius/3
-    k = math.floor(radius/3)
+    k = math.ceil(radius/4)
+    print (f'Radius = {radius}, {k}-hops shown')
     ast_plt = motif_asteroid_plot(
         g=g1,
         node_id=psite,

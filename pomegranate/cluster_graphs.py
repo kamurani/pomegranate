@@ -8,6 +8,7 @@ Usage: python cluster_graphs.py [OPTIONS] GRAPHS
 
 import collections
 import inspect
+import csv
 import pickle
 import re
 import time
@@ -32,7 +33,7 @@ import click as c
 
 
 import stellargraph as sg
-#from stellargraph import StellarGraph
+from stellargraph import StellarGraph
 
 import pandas as pd
 import numpy as np
@@ -66,6 +67,8 @@ GRAPH_NODE_FEATURES = [
 ]
 GRAPH_EDGE_FEATURES = []
 
+CSV_HEADER = "Protein ID,Phosphosite,Kinase,Set,Method,X,Y"
+CSV_FIELD_NAMES = ['Protein ID', 'Phosphosite', 'Kinase', 'Set', 'Method', 'X', 'Y']
 
 
 
@@ -94,9 +97,11 @@ def nx_to_sg(
         if graph is None: continue
         if graph['graph'] is None: continue
         g       = graph['graph'].copy()
+        name    = g.name
         kinase  = graph['kinase']
         psite   = graph['psite']
         res     = graph['res']
+
 
         
         
@@ -184,7 +189,7 @@ def nx_to_sg(
         # Create sg instance from graph, using `feature` vector. 
         g_attr = StellarGraph.from_networkx(g, node_features="feature")
         # Create 'graph' dict
-        out_graphs[idx] = dict(graph=g_attr, res=res, psite=psite, kinase=kinase)
+        out_graphs[idx] = dict(graph=g_attr, res=res, psite=psite, kinase=kinase, name=name)
         graph_labels.append(kinase) # unused for now
 
     return out_graphs
@@ -265,7 +270,7 @@ def test_labels_list(graphs: List, labels: List):
     "--train-method",
     type=c.Choice(['graph', 'node'], case_sensitive=False),
     help="Method to use for training the graph neural network.",
-    default="node",
+    default="graph",
     show_default=True,
 
 )
@@ -274,7 +279,7 @@ def test_labels_list(graphs: List, labels: List):
     "--epochs",
     help="Number of epochs to train for.",
     type=c.INT,
-    default=200,
+    default=50,
     show_default=True,
 )
 @c.option(
@@ -286,10 +291,21 @@ def test_labels_list(graphs: List, labels: List):
     help="Batch size to be used by data generator."
 )
 @c.option(
+    "-N", 
+    "--num-graphs",
+    type=c.INT, 
+    default=-1, show_default=False,
+)
+@c.option(
     "-v", 
     "--verbose",
     is_flag=True,
     
+)
+@c.option(
+    "--write-csv",
+    "--csv",
+    is_flag=True,
 )
 #@c.argument('structures', nargs=1)
 #@c.argument('graphs', nargs=1)
@@ -298,11 +314,13 @@ def main(
     train_method,
     epochs,
     batch_size,
+    num_graphs,
     verbose,
+    write_csv,
 ):
 
-    sg.StellarGraph
     
+
     verbose = True # TODO: remove
 
     graph_path = Path(graphs)
@@ -330,6 +348,7 @@ def main(
 
     parent = os.path.dirname(in_path)
     save_path = os.path.join(parent, "embeddings")
+    csv_path  = os.path.join(parent, "embeddings_output.csv")
 
     print(f"Input file is {in_path}.")
 
@@ -340,7 +359,17 @@ def main(
     graph_format = data['format']
     infile.close()
 
+
     loaded = list(graphs_dict.values())
+
+    original_amt = len(loaded)
+    if num_graphs > 0:  # by default, use all 
+        loaded = loaded[0:min(original_amt, num_graphs)-1]
+
+    if verbose: 
+        amt = num_graphs if num_graphs > 0 else "all"
+        print(f"Loaded {len(loaded)} of {original_amt} graphs. ")
+
 
     # Check which type of graph we are using. 
     g = loaded[0]['graph']
@@ -370,11 +399,19 @@ def main(
 
     test_labels_list(graph_dicts, graph_labels)
 
-    print(graphs[0].nodes()[0])
+    #print(graphs[0].nodes()[0])
 
-    print(graph_dicts[0])
+    #idx = 1488
+    #idx = 0
+    #gd = graph_dicts[idx]
 
-    return
+    #print(graphs[idx].info())
+    #print(gd)
+
+    
+    #print(gd['res'], gd['kinase'], graph_labels[idx], gd['name'])
+
+    
     
 
 
@@ -443,18 +480,68 @@ def main(
         if verbose: print(f"DONE.")
         print(f"Embeddings have shape {embeddings.shape}")
 
+
+
         # Save embeddings 
         data = dict(
             embeddings=embeddings,
             labels=graph_labels,
-            proteins=protein_ids,
+            #proteins=protein_ids,
+            #motifs=motifs, # TODO: description of motif
         )
+
+
         if verbose: print("Saving embeddings...", end=" ")
         outfile =  open(save_path, 'wb')
         pickle.dump(data, outfile)
         outfile.close()
         if verbose: print(f"DONE.")
         print(f"Saved embeddings at {save_path}.")
+
+        """
+        Write 2D embeddings to savefile
+        """
+        if write_csv:
+
+            from sklearn.manifold import TSNE
+            tsne = TSNE(
+                2, 
+                init='pca', # 'random'
+                learning_rate='auto'
+            )
+            two_d = tsne.fit_transform(embeddings)
+            
+            if verbose: print(f"Saving to {csv_path}...")
+
+
+
+            with open(csv_path, 'w', newline='') as f:
+                
+                dim_method = "tSNE"
+                protein_set = 'Human (known kinases)'
+                 
+                writer = csv.DictWriter(f, fieldnames=CSV_FIELD_NAMES)
+
+                
+                ['Protein ID', 'Phosphosite', 'Kinase', 'Set', 'Method', 'X', 'Y']
+                
+                writer.writeheader()
+                for i, gd in enumerate(graph_dicts):
+
+                    
+
+                    row = {
+                        'Protein ID'    : gd['name'],
+                        'Phosphosite'   : gd['res'], 
+                        'Kinase'        : gd['kinase'], 
+                        'Set'           : protein_set, 
+                        'Method'        : dim_method, 
+                        'X'             : two_d[i, 0], 
+                        'Y'             : two_d[i, 1],
+                    }
+                    writer.writerow(row)
+
+
 
     elif train_method == "node-classification":
         

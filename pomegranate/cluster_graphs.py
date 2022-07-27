@@ -481,27 +481,32 @@ def main(
         print(f"Embeddings have shape {embeddings.shape}")
 
 
-
-        # Save embeddings 
-        data = dict(
-            embeddings=embeddings,
-            labels=graph_labels,
-            #proteins=protein_ids,
-            #motifs=motifs, # TODO: description of motif
-        )
+        if not write_csv:
+            """
+            Pickle the embeddings object for later visualisation
+            """
 
 
-        if verbose: print("Saving embeddings...", end=" ")
-        outfile =  open(save_path, 'wb')
-        pickle.dump(data, outfile)
-        outfile.close()
-        if verbose: print(f"DONE.")
-        print(f"Saved embeddings at {save_path}.")
+            # Save embeddings 
+            data = dict(
+                embeddings=embeddings,
+                labels=graph_labels,
+                #proteins=protein_ids,
+                #motifs=motifs, # TODO: description of motif
+            )
 
-        """
-        Write 2D embeddings to savefile
-        """
-        if write_csv:
+
+            if verbose: print("Saving embeddings...", end=" ")
+            outfile =  open(save_path, 'wb')
+            pickle.dump(data, outfile)
+            outfile.close()
+            if verbose: print(f"DONE.")
+            print(f"Saved embeddings at {save_path}.")
+
+        else:
+            """
+            Write 2D embeddings to savefile as .csv 
+            """
 
             from sklearn.manifold import TSNE
             tsne = TSNE(
@@ -512,8 +517,6 @@ def main(
             two_d = tsne.fit_transform(embeddings)
             
             if verbose: print(f"Saving to {csv_path}...")
-
-
 
             with open(csv_path, 'w', newline='') as f:
                 
@@ -527,9 +530,6 @@ def main(
                 
                 writer.writeheader()
                 for i, gd in enumerate(graph_dicts):
-
-                    
-
                     row = {
                         'Protein ID'    : gd['name'],
                         'Phosphosite'   : gd['res'], 
@@ -541,17 +541,12 @@ def main(
                     }
                     writer.writerow(row)
 
-
-
     elif train_method == "node-classification":
         
         pass
 
-
     else:
         raise NotImplementedError(f"Model training method '{train_method}' not implemented.")
-
-
 
 if __name__ == "__main__":
     main()

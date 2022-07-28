@@ -41,7 +41,7 @@ Generate variables and use get_protein_graph
 def process_prot_input(db_name, prot_id):
     
     g = get_protein_graph(prot_id, config="asa", database=db_name)
-    inter_val = g_to_json(g)
+    inter_val = g_to_json(g, prot_id, db_name)
     #return graph in json format
     #print(f"inter_val type is {type(inter_val)}")
     #print(f"inter_val dump type is {type(json.dumps(inter_val))}")
@@ -129,7 +129,7 @@ def update_psite_dropdown(residues, psites):
     tmp = tmp.replace('[', '')
     tmp = tmp.replace(']', '')
     options = list(tmp.split(","))
-    print(f"phos dropdown options type is {type(options)}")
+    #print(f"phos dropdown options type is {type(options)}")
     return options
 
 '''
@@ -147,7 +147,7 @@ Adjacency matrix plot
 def update_graph(radius, asa_threshold, psite, axis_order, graph):
 #def update_graph(radius, asa_threshold, psite, axis_order):
     # Get new subgraph
-    print(f"inter psite type is {type(psite)}")
+    #print(f"inter psite type is {type(psite)}")
     tmp = json.loads(graph)
     g = nx.json_graph.node_link_graph(tmp)
     g1 = g.copy()
@@ -234,8 +234,7 @@ def showInput(db, prot_id):
     return u'DB: {} ID: {}'.format(db, prot_id)
 
 def sidebarTab():
-    return html.Div(
-        
+    return html.Div(        
         id="sidebar",
         children=[
             html.H3("Find a protein"),
@@ -253,7 +252,7 @@ def sidebarTab():
             dcc.Input(
                 id="prot-input",
                 type="text",
-                value="4hhb", # TODO: REMOVE THIS AFTER TESTING
+                #value="4hhb", # TODO: REMOVE THIS AFTER TESTING
                 placeholder="Protein ID",
                 style={'width': '80%'},
                 debounce=True,

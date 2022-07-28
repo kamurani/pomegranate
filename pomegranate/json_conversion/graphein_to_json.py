@@ -1,51 +1,63 @@
 import graphein.protein as gp
-from graphein.testing import graphs_isomorphic
 import networkx.readwrite as nx
 import json
+
+from definitions import SAVED_GRAPHS_DIR 
 # import sys # For cmd line debugging
+def g_to_json(g, prot_id, db_name='PDB'):
 
+    # Test if g is already in JSON format
+    try:
+        nx.json_graph.node_link_graph(g)
+        print("good")
+        return g
+    except:
+        del g.graph["config"] # Remove the config from the graph as it's not easily serialisable
 
-def g_to_json(g):
-
-    del g.graph["config"] # Remove the config from the graph as it's not easily serialisable
-
-    # Ensure graph data is in JSON format
-    for k, v in g.graph.items():
-        try:
-            g.graph[k] = v.to_json()
-        except AttributeError:
+        # Ensure graph data is in JSON format
+        for k, v in g.graph.items():
             try:
-                g.graph[k] = v.tolist()
-            except AttributeError:
-                continue
-
-    # Ensure node data is in JSON format
-    for n, d in g.nodes(data=True):
-        for k, v in d.items():
-            try:
-                d[k] = v.to_json()
+                g.graph[k] = v.to_json()
             except AttributeError:
                 try:
-                    d[k] = v.tolist()
+                    g.graph[k] = v.tolist()
                 except AttributeError:
                     continue
 
-    # Ensure edge data is in JSON format
-    for _, _, d in g.edges(data=True):
-        for k, v in d.items():
-            try:
-                d[k] = v.to_json()
-            except AttributeError:
+        # Ensure node data is in JSON format
+        for n, d in g.nodes(data=True):
+            for k, v in d.items():
                 try:
-                    d[k] = v.tolist()
+                    d[k] = v.to_json()
                 except AttributeError:
                     try:
-                        d[k] = list(v)
+                        d[k] = v.tolist()
                     except AttributeError:
                         continue
 
-    j_graph = nx.json_graph.node_link_data(g)
-    return j_graph
+        # Ensure edge data is in JSON format
+        for _, _, d in g.edges(data=True):
+            for k, v in d.items():
+                try:
+                    d[k] = v.to_json()
+                except AttributeError:
+                    try:
+                        d[k] = v.tolist()
+                    except AttributeError:
+                        try:
+                            d[k] = list(v)
+                        except AttributeError:
+                            continue
+
+        j_graph = nx.json_graph.node_link_data(g)
+
+        # Write the graph to a JSON file
+        graphs_dir = SAVED_GRAPHS_DIR
+        with open(f"{graphs_dir}/{prot_id}_{db_name}.json", 'w') as f:
+            tmp = nx.json_graph.node_link_data(g)
+            f.write(json.dumps(tmp))
+
+        return j_graph
     # print(json.dumps(j_graph))
     # # Write the graph to a JSON file
     # with open("test.json", 'w') as f:

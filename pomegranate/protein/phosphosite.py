@@ -57,7 +57,10 @@ def get_phosphosites(g, residues=['SER', 'THR', 'TYR', 'HIS']):
 # TODO: make this function receive a `list` of dict(id=id, site=site) 
 # this function then returns a list of graphs
 def get_protein_graph(id=None, config=None, database='PDB'):
+
     
+    
+
     # Graph configuration
     if not config:
         config = ProteinGraphConfig()   # default graph config file from graphein
@@ -76,8 +79,9 @@ def get_protein_graph(id=None, config=None, database='PDB'):
             add_peptide_bonds
             ]
 
-        # Use structure path of already downloaded PDB file (if it exists) for DSSP calculation.
-        pdb_path = STRUCTURE_PATH + '/' + id + '.pdb'
+        # Use structure path of already downloaded PDB file (if it exists) for DSSP calculation
+        if not pdb_path:
+            pdb_path = STRUCTURE_PATH + '/' + id + '.pdb'
 
         from graphein.protein.config import DSSPConfig
         from graphein.protein.features.nodes import rsa
@@ -137,10 +141,19 @@ def get_protein_graph(id=None, config=None, database='PDB'):
 Given graph ``g`` get subgraph within radius of psite, and surface residues above 
 ASA threshold. 
 '''
-def get_surface_motif(g=None, site=1, r=10, asa_threshold=0.5):
-
+def get_surface_motif(
+    g: nx.Graph = None, 
+    site: Union[int, str] = 1, 
+    r: float = 10.0, 
+    asa_threshold: float = 0.5,
+):
+    res = list(g.nodes())[site-1]
+    #print("res is", res)
+    psite_node = g.nodes(data=True)[res]
     
     s_g = get_protein_subgraph_radius(g=g, site=site, r=r)
+
+
 
     if asa_threshold:
         try:
@@ -150,8 +163,11 @@ def get_surface_motif(g=None, site=1, r=10, asa_threshold=0.5):
             )
         except:
             raise ValueError("Specified graph does not have RSA metadata.")
+
+        #surface.add_node(psite_node) # Restore psite node if it was removed
         return surface
     else:
+        #s_g.nodes(data=True)[res] = psite_node
         return s_g # Don't consider surface if asa is None
 
     
@@ -159,7 +175,11 @@ def get_surface_motif(g=None, site=1, r=10, asa_threshold=0.5):
 '''
 Given a graph ``g`` get a subgraph from radius and known phos site
 '''
-def get_protein_subgraph_radius(g=None, site=1, r=10):
+def get_protein_subgraph_radius(
+    g: nx.Graph = None, 
+    site: Union[int, str] = 1, 
+    r: float = 10.0,
+):
    
     if isinstance(site, str):
         try:

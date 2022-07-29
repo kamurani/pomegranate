@@ -13,7 +13,6 @@ from definitions import ROOT_DIR, STRUCTURE_PATH
 ### External libraries
 import os
 import numpy as np
-import json
 
 # Plotly 
 import plotly.express as px
@@ -90,16 +89,12 @@ def get_protein_graph(id=None, config=None, database='PDB'):
                                     pdb_path=pdb_path,
         )   
     
-    # NOTE: File paths use '\' in windows systems
-    # NOTE: Need different prot_dir for each DB
-    prot_dir = '../examples/pdbs/'
-    protein_path = prot_dir + id + '.pdb'
+
+    protein_path = id + '.pdb'
 
     if database in ['AlphaFold', 'SWISS_PROT']:
         #NOTE: Might have to remove SWISS_PROT. Not all SP have AF structures
-        print("AF or SP")
         protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
-        print("After")
 
     # if use_alphafold:
     #     pdb_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
@@ -109,26 +104,14 @@ def get_protein_graph(id=None, config=None, database='PDB'):
     # if os.path.isfile(pdb_path):
     #     print(f"Using local PDB file for {id}.")
     #     g = construct_graph(config=config, pdb_path=pdb_path)
-
-    # Check if graph exists
-    graph_dir= '../graphs'
-    graph_path = f'{graph_dir}/{id}_{database}.json'
-    if os.path.isfile(graph_path):
-        with open(graph_path, "r") as f:
-            print(f"Using local graph for {id} from {database}")
-            g = json.load(f)
+    if os.path.isfile(protein_path):
+        print(f"Using local file for {id}.")
+        g = construct_graph(config=config, pdb_path=protein_path)
     else:
-        # Graph doesn't exist
-        if os.path.isfile(protein_path):
-            print(f"Using local file for {id}.")
-            g = construct_graph(config=config, pdb_path=protein_path)
-        else:
-            print(f"Retrieving {id}...")
-            if database == 'PDB':
-                g = construct_graph(config=config, pdb_code=id)
-            else: # NOTE: FIX THIS. BAD STYLE. Same line as 119
-                g = construct_graph(config=config, pdb_path=protein_path)
+        print(f"Retrieving {id}...")
+        g = construct_graph(config=config, pdb_code=id)
 
+    
     # TODO: check if file exists and download if not. 
    
     
@@ -146,9 +129,9 @@ def get_surface_motif(
     r: float = 10.0, 
     asa_threshold: float = 0.5,
 ):
-    res = list(g.nodes())[site-1]
-    # print("res is", res)
-    psite_node = g.nodes(data=True)[res]
+    # res = list(g.nodes())[site-1]
+    # # print("res is", res)
+    # psite_node = g.nodes(data=True)[res]
     
     s_g = get_protein_subgraph_radius(g=g, site=site, r=r)
 

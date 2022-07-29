@@ -1,53 +1,4 @@
 import graphein.protein as gp
-<<<<<<< HEAD
-from graphein.testing import graphs_isomorphic
-import networkx.readwrite as nx
-import json
-# import sys # For cmd line debugging
-
-
-def g_to_json(g):
-
-    del g.graph["config"] # Remove the config from the graph as it's not easily serialisable
-
-    # Ensure graph data is in JSON format
-    for k, v in g.graph.items():
-        try:
-            g.graph[k] = v.to_json()
-        except AttributeError:
-            try:
-                g.graph[k] = v.tolist()
-            except AttributeError:
-                continue
-
-    # Ensure node data is in JSON format
-    for n, d in g.nodes(data=True):
-        for k, v in d.items():
-            try:
-                d[k] = v.to_json()
-            except AttributeError:
-                try:
-                    d[k] = v.tolist()
-                except AttributeError:
-                    continue
-
-    # Ensure edge data is in JSON format
-    for _, _, d in g.edges(data=True):
-        for k, v in d.items():
-            try:
-                d[k] = v.to_json()
-            except AttributeError:
-                try:
-                    d[k] = v.tolist()
-                except AttributeError:
-                    try:
-                        d[k] = list(v)
-                    except AttributeError:
-                        continue
-
-    j_graph = nx.json_graph.node_link_data(g)
-    return j_graph
-=======
 import networkx.readwrite as nx
 import json
 
@@ -107,7 +58,6 @@ def g_to_json(g, prot_id, db_name='PDB'):
             f.write(json.dumps(tmp))
 
         return j_graph
->>>>>>> 699e6d4481baa3c2382dc4ff8a01d0654ff7e642
     # print(json.dumps(j_graph))
     # # Write the graph to a JSON file
     # with open("test.json", 'w') as f:

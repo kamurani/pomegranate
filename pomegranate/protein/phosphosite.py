@@ -126,7 +126,10 @@ def get_surface_motif(g, site, r=10, asa_threshold=0.5):
 
     if asa_threshold:
         try:
-            surface = extract_surface_subgraph(s_g, asa_threshold)
+            surface = extract_surface_subgraph(s_g,
+                                               asa_threshold,
+                                               recompute_distmat=True,
+                                               filter_dataframe=True)
         except:
             raise ValueError("Specified graph does not have RSA metadata.")
         return surface

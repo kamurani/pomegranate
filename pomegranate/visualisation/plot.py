@@ -501,13 +501,13 @@ def motif_asteroid_plot(
     node_list: List[str] = [node_id]
 
     # Iterate over the number of hops and extract nodes in each shell
-    for i in range(1, k):
+    for i in range(1, k+1):
         subgraph = extract_k_hop_subgraph(g, node_id, k=i)
         candidate_nodes = subgraph.nodes()
         # Check we've not already found nodes in the previous shells
         nodes[i] = [n for n in candidate_nodes if n not in node_list]
         node_list += candidate_nodes
-    shells = [nodes[i] for i in range(k)]
+    shells = [nodes[i] for i in range(k+1)]
 
 
     #log.debug(f"Plotting shells: {shells}")

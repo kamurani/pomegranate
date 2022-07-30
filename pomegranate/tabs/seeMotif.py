@@ -78,7 +78,7 @@ def process_prot_input(db_name, prot_id):
     
     g = get_protein_graph(prot_id, config="asa", database=db_name)
     inter_val = g_to_json(g, prot_id, db_name)
-    
+
     #return graph in json format
     return json.dumps(inter_val)
 
@@ -153,9 +153,10 @@ Adjacency matrix plot
     Input('selected-psite-dropdown', 'value'),
     Input('axis-order-dropdown', 'value'),
     Input ('intermediate-value-prot', 'children'),
+    Input('selected-psite-residue-types', 'value'),
     )   
     
-def update_graphs(radius, asa_threshold, psite, axis_order, graph):
+def update_graphs(radius, asa_threshold, psite, axis_order, graph, sel_res_types):
 #def update_graph(radius, asa_threshold, psite, axis_order):
     # Get new subgraph
     #print(f"inter psite type is {type(psite)}")
@@ -163,7 +164,7 @@ def update_graphs(radius, asa_threshold, psite, axis_order, graph):
     g1 = load_prot_graph(graph)
     
     if not psite:
-        psite = get_phosphosites(g1, residues=['SER','THR','TYR'])[0]
+        psite = get_phosphosites(g1, residues=sel_res_types, rsa_threshold=asa_threshold)[0]
     
     s_g = get_surface_motif(g1, site=psite, r=radius, asa_threshold=asa_threshold)
     # update figure 

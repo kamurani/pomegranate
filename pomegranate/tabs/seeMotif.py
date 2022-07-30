@@ -41,11 +41,7 @@ Generate variables and use get_protein_graph
 def process_prot_input(db_name, prot_id):
     
     g = get_protein_graph(prot_id, config="asa", database=db_name)
-<<<<<<< HEAD
-    inter_val = g_to_json(g)
-=======
     inter_val = g_to_json(g, prot_id, db_name)
->>>>>>> 699e6d4481baa3c2382dc4ff8a01d0654ff7e642
     #return graph in json format
     #print(f"inter_val type is {type(inter_val)}")
     #print(f"inter_val dump type is {type(json.dumps(inter_val))}")
@@ -133,11 +129,7 @@ def update_psite_dropdown(residues, psites):
     tmp = tmp.replace('[', '')
     tmp = tmp.replace(']', '')
     options = list(tmp.split(","))
-<<<<<<< HEAD
-    print(f"phos dropdown options type is {type(options)}")
-=======
     #print(f"phos dropdown options type is {type(options)}")
->>>>>>> 699e6d4481baa3c2382dc4ff8a01d0654ff7e642
     return options
 
 '''
@@ -155,11 +147,7 @@ Adjacency matrix plot
 def update_graph(radius, asa_threshold, psite, axis_order, graph):
 #def update_graph(radius, asa_threshold, psite, axis_order):
     # Get new subgraph
-<<<<<<< HEAD
-    print(f"inter psite type is {type(psite)}")
-=======
     #print(f"inter psite type is {type(psite)}")
->>>>>>> 699e6d4481baa3c2382dc4ff8a01d0654ff7e642
     tmp = json.loads(graph)
     g = nx.json_graph.node_link_graph(tmp)
     g1 = g.copy()
@@ -246,12 +234,7 @@ def showInput(db, prot_id):
     return u'DB: {} ID: {}'.format(db, prot_id)
 
 def sidebarTab():
-<<<<<<< HEAD
-    return html.Div(
-        
-=======
     return html.Div(        
->>>>>>> 699e6d4481baa3c2382dc4ff8a01d0654ff7e642
         id="sidebar",
         children=[
             html.H3("Find a protein"),
@@ -269,11 +252,7 @@ def sidebarTab():
             dcc.Input(
                 id="prot-input",
                 type="text",
-<<<<<<< HEAD
-                value="4hhb", # TODO: REMOVE THIS AFTER TESTING
-=======
                 #value="4hhb", # TODO: REMOVE THIS AFTER TESTING
->>>>>>> 699e6d4481baa3c2382dc4ff8a01d0654ff7e642
                 placeholder="Protein ID",
                 style={'width': '80%'},
                 debounce=True,

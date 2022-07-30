@@ -1,6 +1,8 @@
 ### POMEGRANATE ###
 structures/
 
+saved_graphs/*
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

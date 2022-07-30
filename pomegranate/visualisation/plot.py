@@ -573,7 +573,7 @@ def motif_asteroid_plot(
             node_size_min + node_size(n) * node_size_multiplier for n in subgraph.nodes()
         ]
 
-        '''
+        
         if size_nodes_by == "degree":
             node_sizes = [
                 node_size_min + subgraph.degree(n) * node_size_multiplier for n in subgraph.nodes()
@@ -589,7 +589,7 @@ def motif_asteroid_plot(
             raise NotImplementedError(
                 f"Size by {size_nodes_by} not implemented."
             )
-        '''
+        
 
         if colour_nodes_by == "shell":
             node_colours = []

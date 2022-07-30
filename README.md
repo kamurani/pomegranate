@@ -4,20 +4,40 @@
 
 **P**h**o**sphosite **m**otif **e**xplorer -- **gra**ph **n**etwork **a**bstraction **t**hrough **e**mbeddings 
 
-Pomegranate interactively explores phosphosite motifs on protein structures.
+Pomegranate interactively explores phosphosite motifs on protein structures through a web application. 
+
+Clustering of protein graphs is also possible through a command line interface.
 
 ![](./imgs/POMEGRANATE-LOGO.png)
 
 
 
 
-### Download structure from AlphaFold
+### AF2 Structure database
 ![](./imgs/alphafold_comparison.gif)
+
+
+Alternative databases are also supported.  
+
+Local PDB files can also be used (IN PROGRESS)
+
+### Structural motif clustering 
+
+[Compressed proteome downloads](https://alphafold.ebi.ac.uk/download) 
+
+
+
+Currently using *[Saccharomyces cerevisiae](https://ftp.ebi.ac.uk/pub/databases/alphafold/latest/UP000002311_559292_YEAST_v2.tar)*  \
+and *[Homo sapiens](https://ftp.ebi.ac.uk/pub/databases/alphafold/latest/UP000005640_9606_HUMAN_v2.tar)*
+
+Other bulk-download options can be found [here](https://alphafold.ebi.ac.uk/download).
 
 ### Extract structural motif for a given radius
 
 
 ## Installation 
+
+TODO: upload to PyPI
 
 ### Dependencies
 
@@ -45,6 +65,103 @@ sudo apt-get install dssp
 
 
 ## Usage 
+
+### Clustering pipeline 
+
+#### Load and download PDB files using phosphosite database
+
+![](./imgs/graph-construct-1.gif)
+
+```
+$ pomegranate load --help
+Usage: pomegranate load [OPTIONS] PHOSPHOSITE STRUCTURES GRAPHS
+
+Options:
+  -v, --verbose                   Show extensive program output.
+  -d, --debug                     Show extensive program output for debugging.
+  -q, --quiet                     Suppress program output.
+  -n, --dry-run, --dryrun         Print out what the program would do without
+                                  loading the graphs.
+  -u, --unique                    Only construct graphs for unique motifs.
+                                  Duplicate entries (i.e. with different
+                                  kinases) are ignored.
+  --download / -S, --skip-download
+                                  Skip downloading protein structures into the
+                                  supplied directory.  If the required
+                                  structure does not exist, graph construction
+                                  for that accession ID will be skipped.
+  -o, --graph-format, --output-format, --format [NetworkX|StellarGraph|nx|sg]
+                                  Save graphs as NetworkX or StellarGraph
+                                  instances with feature preprocessing.
+                                  [default: NetworkX]
+  -N, --num-psites INTEGER        Only consider the first N motifs in a
+                                  dataset.  Graph construction will continue
+                                  until N graphs are made, or the end of the
+                                  dataset is reached.
+  -r, --radius FLOAT              The threshold radius of the motif  [default:
+                                  10.0]
+  --rsa, --rsa-threshold FLOAT    The RSA threshold of the motif  [default:
+                                  0.0]
+  --node-features, --nf <node_features>
+                                  Which node features to include in the
+                                  constructed graphs.  [default:
+                                  m1,m2,m3,m4,m5,m6,m7pdist,coords,bfac,rsa]
+  --edge-features, --ef TEXT
+  -c, --config TEXT               Path to config.yml file used to specify how
+                                  to construct the graphs.  [default:
+                                  config.yml]
+  --help                          Show this message and exit.
+```
+
+#### Learn protein representations 
+
+```
+$ pomegranate learn --help
+Usage: pomegranate learn [OPTIONS] GRAPHS
+
+Options:
+  -e, --epochs INTEGER      Number of epochs to train for.  [default: 200]
+  -b, --batch-size INTEGER  Batch size to be used by data generator.
+                            [default: 16]
+  -v, --verbose
+  --help                    Show this message and exit.
+```
+
+TODO: have multiple models to use for clustering with different training methods associated with each. 
+
+E.g. 
+
+- GCN trained on graph-graph distance; 
+- node classification layer (semi-supervised)
+etc.
+
+#### Visualise 
+
+```
+Usage: visualise_embeddings.py [OPTIONS] EMBEDDINGS OUTDIR
+
+Options:
+  -N, --num-plots INTEGER         How many plots to output.  [default: 1]
+  --dim-method, --method [UMAP|tSNE|PCA]
+                                  Method to use for dimensionality reduction.
+                                  [default: tSNE]
+  -l, --labels / --no-labels      Show labels on plot.
+  -i, --interactive               Open interactive plot viewer.
+  -v, --verbose
+  --help                          Show this message and exit.
+```
+
+Example clustering:
+
+![](./imgs/embeddings.png)
+
+#### Cluster embeddings
+
+##### TODO
+
+Hierarchical, k-means, etc.
+
+
 
 
 ## References

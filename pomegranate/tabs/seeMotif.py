@@ -1,33 +1,71 @@
 
-from dash import Dash, dcc, html, callback, Input, Output
+from dash import Dash, dcc, html, callback, Input, Output, dependencies
 import plotly.express as px
 import pandas as pd
 import numpy as np
 import math
 
+import networkx.readwrite as nx
+import json
+
 from protein.phosphosite import *
 from protein.phosphosite import get_surface_motif
 from protein.interactions import add_distance_threshold
-
 from visualisation.plot import motif_asteroid_plot
+from json_conversion.graphein_to_json import g_to_json, load_prot_graph
 
 # Get data 
 # --------
 
 
 #### HARDCODED PROTEIN FOR NOW; TODO: USE INPUT TO ASSIGN PROTEIN ####
-prot_id = "Q9Y2X7"
+#prot_id = "Q9Y2X7"
 
-prot_id = "4hhb" # PDB file.  Try using with extract_surface_subgraph. 
+#prot_id = "4hhb" # PDB file.  Try using with extract_surface_subgraph. 
+#g = get_protein_graph(prot_id, config="asa", database)
 
+#psites = get_phosphosites(g)
 
-USE_ALPHAFOLD = False
-g = get_protein_graph(prot_id, use_alphafold=USE_ALPHAFOLD, config="asa")
+'''
+For protein input sidebar
+'''
+fnameDict = {'PDB': ['opt1_p', 'opt2_p', 'opt3_p'], 'SWISS_PROT': ['opt1_s', 'opt2_s'], 'AlphaFold': ['opt1_a']}
 
-psites = get_phosphosites(g)
+names = list(fnameDict.keys())
+nestedOptions = fnameDict[names[0]]
 
+'''
+Generate variables and use get_protein_graph
+'''
+@callback(
+    Output('intermediate-value-prot', 'children'),
+    Input('db-dropdown', 'value'),
+    Input('prot-input', 'value'),
+)
+def process_prot_input(db_name, prot_id):
+    
+    g = get_protein_graph(prot_id, config="asa", database=db_name)
+    inter_val = g_to_json(g, prot_id, db_name)
+    #return graph in json format
+    #print(f"inter_val type is {type(inter_val)}")
+    #print(f"inter_val dump type is {type(json.dumps(inter_val))}")
+    return json.dumps(inter_val)
 
-## TODO: add slider for ASA threshold (subgraph selection)
+'''
+Generate psites
+'''
+@callback(
+    Output('intermediate-value-psites', 'data'),
+    Input('intermediate-value-prot', 'children'),
+    Input('selected-psite-residue-types', 'value'),
+    Input('asa-threshold-slider', 'value')
+)
+def process_psite(graph, sites, rsa_thresh):
+
+    g = load_prot_graph(graph)
+    psites = get_phosphosites(g, sites, rsa_thresh)
+
+    return json.dumps(psites)
 
 
 '''
@@ -72,16 +110,30 @@ def update_selected_psite(value):
 '''
 Phosphosite dropdown menu
 '''
+# @callback(
+#     Output('selected-psite-dropdown', 'options'),
+#     Input('selected-psite-residue-types', 'value'),
+#     Input('intermediate-value-prot', 'children'),
+#     )
+# def update_psite_dropdown(residues, graph):
+# #def update_psite_dropdown(residues):
+    
+#     tmp = json.loads(graph)
+#     g = nx.json_graph.node_link_graph(tmp)
+#     g1 = g.copy()
+#     return get_phosphosites(g1, residues)
 @callback(
     Output('selected-psite-dropdown', 'options'),
     Input('selected-psite-residue-types', 'value'),
-    Input('asa-threshold-slider', 'value')
+    Input('intermediate-value-psites', 'data'),
     )
-def update_psite_dropdown(residues, rsa_threshold):
-    
-    g1 = g.copy()
-    return get_phosphosites(g1, residues, rsa_threshold)
-
+def update_psite_dropdown(residues, psites):
+    tmp = psites.replace('\"', '')
+    tmp = tmp.replace('[', '')
+    tmp = tmp.replace(']', '')
+    options = list(tmp.split(","))
+    #print(f"phos dropdown options type is {type(options)}")
+    return options
 
 '''
 Adjacency matrix plot
@@ -93,25 +145,29 @@ Adjacency matrix plot
     Input('asa-threshold-slider', 'value'),
     Input('selected-psite-dropdown', 'value'),
     Input('axis-order-dropdown', 'value'),
+    Input ('intermediate-value-prot', 'children'),
     )   
-
-def update_graphs(radius, asa_threshold, psite, axis_order):
+    
+def update_graphs(radius, asa_threshold, psite, axis_order, graph):
+#def update_graph(radius, asa_threshold, psite, axis_order):
     # Get new subgraph
-    g1 = g.copy()
+    #print(f"inter psite type is {type(psite)}")
+
+    g1 = load_prot_graph(graph)
     
     if not psite:
         psite = get_phosphosites(g1, residues=['SER','THR','TYR'])[0]
     
     s_g = get_surface_motif(g1, site=psite, r=radius, asa_threshold=asa_threshold)
     # update figure 
-    name = g.graph["name"]
+    name = g1.graph["name"]
     title = name.upper() + f""" STRUCTURAL MOTIF @ {psite}, threshold: {radius} Å
                                 <br>Surface accessibility threshold: {asa_threshold}"""
     adj_mat = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order)
     
     # Update asteroid plot
     # Add edges to graph by distance
-    ast_g = add_distance_threshold(s_g, long_interaction_threshold=1, threshold=4.1)
+    #ast_g = add_distance_threshold(s_g, long_interaction_threshold=1, threshold=4.1)
     # Distance edges between AAs closer than 3 A -> so k = radius/3
     k = math.floor(radius/4)
     print (f'Radius = {radius}, {k}-hops shown')
@@ -127,6 +183,12 @@ def update_graphs(radius, asa_threshold, psite, axis_order):
     )
 
     return [adj_mat, ast_plt]
+
+
+'''
+Process Protein Input
+'''
+
 
 '''
 Layout
@@ -144,8 +206,8 @@ def motifVisualisationTab ():
             ),
             dcc.Dropdown(
                 id='selected-psite-dropdown',
-                options=[{'label':site, 'value':site} for site in psites],
-                value = psites[0],
+                # options=[{'label':site, 'value':site} for site in psites],
+                # value = psites[0],
                 style={'width': '80%'}
             ),
             dcc.Dropdown(
@@ -174,3 +236,46 @@ def motifVisualisationTab ():
                 )
             ])
     ])
+
+'''
+Debugging to show input
+'''
+@callback(
+    Output('input-show', 'children'),
+    Input('db-dropdown', 'value'),
+    Input('prot-input', 'value'),
+)
+def showInput(db, prot_id):
+    return u'DB: {} ID: {}'.format(db, prot_id)
+
+def sidebarTab():
+    return html.Div(        
+        id="sidebar",
+        children=[
+            html.H3("Find a protein"),
+            html.Hr(),
+            dcc.Dropdown(
+                id='db-dropdown',
+                options=[{'label':name, 'value':name} for name in names],
+                value = list(fnameDict.keys())[0],
+                style={'width': '80%'},
+            ),
+            # dcc.Dropdown(
+            #     id='opt-dropdown',
+            #     style={'width': '20%'},
+            # ),
+            dcc.Input(
+                id="prot-input",
+                type="text",
+                #value="4hhb", # TODO: REMOVE THIS AFTER TESTING
+                placeholder="Protein ID",
+                style={'width': '80%'},
+                debounce=True,
+                persistence=True,
+                persistence_type='session'
+            ),
+            dcc.Store(id='intermediate-value-prot', storage_type='session'),
+            dcc.Store(id='intermediate-value-psites', storage_type='session'),
+            html.Div(id='input-show'), # DEBUGGING inputs
+        ],
+    )

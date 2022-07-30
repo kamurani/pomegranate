@@ -26,6 +26,8 @@ from graphein.protein.visualisation import colour_nodes, colour_edges
 # added imports
 from graphein.utils.utils import protein_letters_3to1_all_caps as aa3to1
 
+from plotly.subplots import make_subplots
+
 '''
 Modified from graphein.protein.visualisation by Cam M
 '''
@@ -155,7 +157,95 @@ def motif_plot_distance_matrix(
 
     return fig
 
+def multiple_motif_plot_distance_matrix(
+    to_plot: list(Tuple[nx.Graph, str], Tuple[nx.Graph, str]),
+    use_plotly: bool = True,
+    aa_order: Optional[str] = "hydro",
+    reverse_order: bool = False,
+    show_residue_labels: bool = True,
+    colour: Optional[str] = 'viridis_r'
+) -> go.Figure:
+    """Plots a distance matrix of the graph.
 
+    :param g: NetworkX graph containing a distance matrix as a graph attribute (``g.graph['dist_mat']``).
+    :type g: nx.Graph, optional
+    :param psite: Location of the phosphorylation site.
+    :type psite: Union[int, str]
+    :param dist_mat: Distance matrix to plot. If not provided, the distance matrix is taken from the graph. Defaults to ``None``.
+    :type dist_mat: np.ndarray, optional
+    :param use_plotly: Whether to use ``plotly`` or ``seaborn`` for plotting. Defaults to ``True``.
+    :type use_plotly: bool
+    :param title: Title of the plot.Defaults to ``None``.
+    :type title: str, optional
+    :param aa_order: Method used to order residues on the axes.  Defaults to ``sequence`` order.
+    :type aa_order: str, optional 
+    :param reverse_order: Reverse the ordering of residues on the axes.  Defaults to ``False``.
+    :show_residue_labels: Whether to show residue labels on the plot. Defaults to ``True``.
+    :type show_residue_labels: bool
+    :raises: ValueError if neither a graph ``g`` or a ``dist_mat`` are provided.
+    :return: Plotly figure.
+    :rtype: px.Figure
+    """
+    if to_plot is None:
+        raise ValueError("Must provide a list of graph/psite pairs to plot.")
+
+    assert (len(to_plot) == 2)
+    dist_mats = []
+    x_ranges = []
+    y_ranges = []
+    titles = []
+    for g, psite in to_plot:
+        dist_mats.append(g.graph["distmat"] )
+        x_ranges.append(list(g.nodes))
+        y_ranges.append(list(g.nodes))
+
+        titles.append(f'{g.graph["name"]} for site {psite}')
+
+
+        # Sort nodes by ordering??????
+        # add phospho label to selected site??????
+
+    num_plots = len(to_plot)
+
+    # Assuming number is even?
+    if use_plotly:
+        num_cols = 2
+        num_rows = 1
+        # Initialize figure with subplots
+        fig = make_subplots(
+                rows=num_rows, cols=num_cols,
+                #template="plotly_dark",
+                #color_continuous_scale=colour,
+                column_widths=[0.5, 0.5],
+                row_heights=[0.5],
+                #subplot_titles=("Plot 1", "Plot 2", "Plot 3", "Plot 4"),
+            )
+        cur_col = 1
+        cur_row = 1
+        for i in range(0, num_plots):
+            
+            # add next plot
+            fig.add_trace(px.imshow(
+                            dist_mats[i],
+                            x=x_ranges[i],
+                            y=y_ranges[i],
+                            template="plotly_dark",
+                            color_continuous_scale=colour,
+                            labels=dict(color="Distance"),
+                            title=titles[i]
+                        ).data[0],
+                        row = cur_row, 
+                        col = cur_col)
+            
+            # increment rows/columns
+            if cur_col == 2:
+                cur_row =+ 1
+                cur_col = 1
+
+            # the length is 2 and the loop is running twice!!
+            # maybe decrease rows and cols to fit it?
+            assert(i < 2)
+    return fig
 
 
 '''

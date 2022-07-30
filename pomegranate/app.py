@@ -7,7 +7,8 @@ from distutils.log import debug
 import dash
 from dash import Dash, dcc, html, Input, Output
 from tabs.seeMotif import motifVisualisationTab
-from tabs.sideBySide import compareBySideTab
+#from tabs.sideBySide import compareBySideTab
+from tabs.multipleCompare import compareBySideTab
 
 PROTEIN_ID = "default"
 

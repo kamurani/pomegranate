@@ -167,7 +167,7 @@ def get_protein_subgraph_radius(g, site, r=10.0):
     try:
         x_y_z = node_coords(g, site)
     except ValueError:
-        raise ValueError("Specified phospho site isn't in correct format.")            
+        raise ValueError("Specified phospho site isn't in correct format.")       
     
     # Get subgraph
     s_g = extract_subgraph_from_point(g, centre_point=x_y_z, radius=r)
@@ -192,7 +192,6 @@ def get_adjacency_matrix_plot(g=None, psite=1, title=None, order='seq'):
 # Output: tuple (x, y, z)
 def node_coords(g, node):
 
-    print (g.graph)
     df = g.graph['pdb_df']
 
     coords = df.loc[df.node_id == node][['x_coord','y_coord','z_coord']]

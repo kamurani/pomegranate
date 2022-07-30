@@ -97,16 +97,6 @@ vals = [dict(label=f"{k} ASA") for k in keys]
 ASA_THRESHOLD_SLIDER_MARKS = dict(zip(keys, vals))
 
 
-
-'''
-@callback(Output('intermediate-value', 'data'), Input('selected-psite-dropdown', 'value'))
-def update_selected_psite(value):
-    
-    
-    s_g = get_protein_subgraph_radius(g1, site=psite, r=value)
-'''
-
-
 '''
 Phosphosite dropdown menu
 '''
@@ -124,14 +114,13 @@ Phosphosite dropdown menu
 #     return get_phosphosites(g1, residues)
 @callback(
     Output('selected-psite-dropdown', 'options'),
-    Input('selected-psite-residue-types', 'value'),
     Input('intermediate-value-psites', 'data'),
     )
-def update_psite_dropdown(residues, psites):
+def update_psite_dropdown(psites):
     tmp = psites.replace('\"', '')
     tmp = tmp.replace('[', '')
     tmp = tmp.replace(']', '')
-    options = list(tmp.split(","))
+    options = list(tmp.split(", "))
     #print(f"phos dropdown options type is {type(options)}")
     return options
 

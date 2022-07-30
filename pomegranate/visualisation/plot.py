@@ -7,7 +7,7 @@ import logging
 from itertools import count
 from typing import Dict, List, Optional, Tuple, Union
 
-import matplotlib
+import math
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
@@ -189,7 +189,6 @@ def multiple_motif_plot_distance_matrix(
     if to_plot is None:
         raise ValueError("Must provide a list of graph/psite pairs to plot.")
 
-    assert (len(to_plot) == 2)
     dist_mats = []
     x_ranges = []
     y_ranges = []
@@ -199,8 +198,7 @@ def multiple_motif_plot_distance_matrix(
         x_ranges.append(list(g.nodes))
         y_ranges.append(list(g.nodes))
 
-        titles.append(f'{g.graph["name"]} for site {psite}')
-
+        titles.append(f'{g.graph["name"]} at site {psite}')
 
         # Sort nodes by ordering??????
         # add phospho label to selected site??????
@@ -210,43 +208,46 @@ def multiple_motif_plot_distance_matrix(
     # Assuming number is even?
     if use_plotly:
         num_cols = 2
-        num_rows = 1
+        num_rows = math.ceil(num_plots / 2)
         # Initialize figure with subplots
         fig = make_subplots(
-                rows=num_rows, cols=num_cols,
-                #template="plotly_dark",
-                #color_continuous_scale=colour,
-                column_widths=[0.5, 0.5],
-                row_heights=[0.5],
-                #subplot_titles=("Plot 1", "Plot 2", "Plot 3", "Plot 4"),
+                rows=num_rows,
+                cols=num_cols,
+                subplot_titles=titles,
+                vertical_spacing=0.1,
             )
+
         cur_col = 1
         cur_row = 1
         for i in range(0, num_plots):
             
             # add next plot
-            fig.add_trace(px.imshow(
-                            dist_mats[i],
-                            x=x_ranges[i],
-                            y=y_ranges[i],
-                            template="plotly_dark",
-                            color_continuous_scale=colour,
-                            labels=dict(color="Distance"),
-                            title=titles[i]
-                        ).data[0],
+            fig.add_trace(go.Heatmap(z=dist_mats[i],
+                        coloraxis='coloraxis',
+                        x=x_ranges[i],
+                        y=y_ranges[i]),
                         row = cur_row, 
                         col = cur_col)
             
             # increment rows/columns
             if cur_col == 2:
-                cur_row =+ 1
+                cur_row += 1
                 cur_col = 1
+            else:
+                cur_col += 1
 
-            # the length is 2 and the loop is running twice!!
-            # maybe decrease rows and cols to fit it?
-            assert(i < 2)
+        fig.update_layout(coloraxis = dict(colorscale=colour), height=250*num_plots)
     return fig
 
+# px.imshow(
+#                             dist_mats[i],
+#                             x=x_ranges[i],
+#                             y=y_ranges[i],
+#                             template="plotly_dark",
+#                             color_continuous_scale=colour,
+#                             labels=dict(color="Distance"),
+#                             title=titles[i]
+#                         ).data[0],
 
 '''
 Modified from graphein.protein.visualisation

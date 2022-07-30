@@ -2,7 +2,4 @@
 /* MULTI MOTIF VIEW TAB */
 .side-by-side-tab-content {
     width: 100%;
-    height: 100%;
 }
-
-.s-b-s-options { grid-area: 1 / 1 / 2 / 7; }

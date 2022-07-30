@@ -68,7 +68,7 @@ def update_graph(radius, asa_threshold, axis_order, colour):
     # update figure 
     name = g.graph["name"]
     title = name.upper() + f""" STRUCTURAL MOTIF @ {psite}"""
-    figure = multiple_motif_plot_distance_matrix(to_plot=[(s_g, psite), (s_g, psite)], colour=colour)
+    figure = multiple_motif_plot_distance_matrix(to_plot=[(s_g, psite), (s_g, psite), (s_g, psite), (s_g, psite)], colour=colour)
       
     return figure
 
@@ -78,7 +78,7 @@ Layout
 '''
 def compareBySideTab ():
     return html.Div(className='side-by-side-tab-content', children=[
-        html.Div(className='s-b-s-options tab-component', children=[
+        html.Div(className='tab-component', children=[
             dcc.Slider(0, 30,
                     value=10,
                     marks=get_marks(),

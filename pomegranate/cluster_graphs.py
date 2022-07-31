@@ -480,12 +480,10 @@ def main(
         if verbose: print(f"DONE.")
         print(f"Embeddings have shape {embeddings.shape}")
 
-
         if not write_csv:
             """
             Pickle the embeddings object for later visualisation
             """
-
 
             # Save embeddings 
             data = dict(
@@ -494,7 +492,6 @@ def main(
                 #proteins=protein_ids,
                 #motifs=motifs, # TODO: description of motif
             )
-
 
             if verbose: print("Saving embeddings...", end=" ")
             outfile =  open(save_path, 'wb')

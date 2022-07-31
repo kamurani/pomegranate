@@ -12,7 +12,7 @@ from cluster_graphs import nx_to_sg, GRAPH_NODE_FEATURES
 import re
 
 # Pomegranate
-from protein.phosphosite import get_surface_motif
+from protein.phosphosite import get_surface_motif, get_protein_subgraph_radius
 from validate import get_database
 
 import pickle
@@ -225,7 +225,7 @@ def load_graphs(
             if verbose:
                 print(f"[{index:4d}] Constructing graph from {acc}...", end=" ")
             
-            try:
+            
                 g = construct_graph(config, pdb_path=pdb_path) 
 
                 pos: int = int(res_pos)
@@ -236,7 +236,7 @@ def load_graphs(
                 psite_res: str = str(psite['residue_name'])
                 psite_num: int = int(psite['residue_number'])
 
-                g = get_surface_motif(g, site=pos, r=radius_threshold, asa_threshold=rsa_threshold) 
+                g = get_surface_motif(g, site=res, r=radius_threshold, asa_threshold=rsa_threshold) 
 
                 # Assert that phosphosite residue is same as what we expected 
                 assert aa3to1(psite_res) == res_code, f"Residue mismatch {psite_res} and {res_code}"
@@ -266,7 +266,7 @@ def load_graphs(
                     else: print('\x1b[1;37;41m' + '[PSITE]' + '\x1b[0m', end=" ")
                     num_nodes = len(list(graphs[index]['graph'].nodes))
                     print(f"DONE.  Graph {graphs[index]['graph'].name:15s} with {num_nodes:3d} nodes | PSITE: {res:10s} | KINASE: {kinase:10s}", end="")
-
+            try:
                     #print(f"\t{'YES' if psite_contained else 'NO'}", end=" ")
                 if verbose:
                     print("")

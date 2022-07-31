@@ -14,18 +14,44 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = Dash(__name__, external_stylesheets=external_stylesheets)
 
+'''
+Sidebar
+'''
+fnameDict = {'PDB': ['opt1_p', 'opt2_p', 'opt3_p'], 'SWISS_PROT': ['opt1_s', 'opt2_s'], 'AlphaFold': ['opt1_a']}
+
+names = list(fnameDict.keys())
+nestedOptions = fnameDict[names[0]]
+
 sidebar = html.Div(
-    id="sidebar",
-    children= [
+    id="sidebar-container",
+    children=[
         html.H3("Find a protein"),
         html.Hr(),
-        html.P(
-            "A placeholder for searching a protein of interest"
+        dcc.Dropdown(
+            id='db-dropdown',
+            options=[{'label':name, 'value':name} for name in names],
+            value = list(fnameDict.keys())[0],
+            style={'width': '80%'},
         ),
-        html.Button("Button")
-    ]
+        dcc.Input(
+            id="prot-input",
+            type="text",
+            #value="4hhb", # TODO: REMOVE THIS AFTER TESTING
+            placeholder="Protein ID",
+            style={'width': '80%'},
+            debounce=True,
+            persistence=True,
+            persistence_type='session'
+        ),
+        dcc.Store(id='intermediate-value-prot', storage_type='session'),
+        dcc.Store(id='intermediate-value-psites', storage_type='session'),
+        html.Div(id='input-show'), # DEBUGGING inputs
+    ],
 )
 
+'''
+Tabs
+'''
 tab_selected_style = {
     'borderTop': '3px solid #b52d37',
 }
@@ -42,11 +68,18 @@ content = html.Div(
     ]
 )
 
-app.layout = html.Div([
+base_page = html.Div([
     html.Img(src=app.get_asset_url('imgs/POMEGRANATE-LOGO.png'), style={'width': '40%'}),
     html.H2('PhOsphosite Motif Explorer -- GRAph Network Abstraction Through Embeddings'),
     html.Div(id="content-grid", children=[sidebar,content])
     
+])
+
+app.layout = base_page
+
+app.validation_layout = html.Div([
+    base_page,
+    motifVisualisationTab()
 ])
 
 @app.callback(Output('tab-container', 'children'),
@@ -71,6 +104,7 @@ def render_content(tab):
         return html.H3('Look how cool our clusters are')
     elif tab == 'documentation':
         return html.H3('Documentation')
+
 
 
 

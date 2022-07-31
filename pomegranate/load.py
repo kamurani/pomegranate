@@ -225,7 +225,7 @@ def load_graphs(
             if verbose:
                 print(f"[{index:4d}] Constructing graph from {acc}...", end=" ")
             
-            
+            try:
                 g = construct_graph(config, pdb_path=pdb_path) 
 
                 pos: int = int(res_pos)
@@ -266,7 +266,7 @@ def load_graphs(
                     else: print('\x1b[1;37;41m' + '[PSITE]' + '\x1b[0m', end=" ")
                     num_nodes = len(list(graphs[index]['graph'].nodes))
                     print(f"DONE.  Graph {graphs[index]['graph'].name:15s} with {num_nodes:3d} nodes | PSITE: {res:10s} | KINASE: {kinase:10s}", end="")
-            try:
+            
                     #print(f"\t{'YES' if psite_contained else 'NO'}", end=" ")
                 if verbose:
                     print("")

@@ -12,14 +12,17 @@ import matplotlib
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import seaborn as sns
 from mpl_toolkits.mplot3d import Axes3D
+from scipy.spatial.distance import pdist, squareform
 import re
 
 from graphein.protein.subgraphs import extract_k_hop_subgraph
 from graphein.utils.utils import import_message
+import graphein.protein.edges.distance as g_dist
 
 # imports from visualisation.py
 from graphein.protein.visualisation import colour_nodes, colour_edges
@@ -35,7 +38,6 @@ Modified from graphein.protein.visualisation by Cam M
 def motif_plot_distance_matrix(
     g: Optional[nx.Graph],
     psite: Union[int, str],
-    dist_mat: Optional[np.ndarray] = None,
     use_plotly: bool = True,
     aa_order: Optional[str] = "hydro",
     reverse_order: bool = False,
@@ -63,77 +65,29 @@ def motif_plot_distance_matrix(
     :return: Plotly figure.
     :rtype: px.Figure
     """
-    if g is None and dist_mat is None:
-        raise ValueError("Must provide either a graph or a distance matrix.")
+    if g is None:
+        raise ValueError("Must provide a graph as input.")
 
-    if dist_mat is None:
-        dist_mat = g.graph["distmat"] 
-        
-        
-    # Phospho site 
-    if isinstance(psite, str):
-        try:
-            psite = int(psite.split(':')[-1])
-        except ValueError:
-            raise ValueError("Specified phospho site isn't in correct format.")  
-            
-    # TODO Check if graph is original (i.e. size of dist_mat == size of graph)
-    def get_indexes(node_list):
-        indexes = []
-        for n in node_list:
-            indexes.append(int(n.split(":")[2]) - 1)    # indexing from 0
-        return indexes  
-        
-        # TODO 
-        # sort indexes in - distance order, - seq position order           
-    	
-    if g is not None:    
- 
-        x_range = list(g.nodes)
-        
-        # Sort nodes by ordering
+    # Get distance matrix
+    dist_mat = ordered_distmat(g, aa_order)      
+    
+    # Get labels
+    x_range = list(dist_mat.index)
+    y_range = list(dist_mat.columns)
+    
+    # add phospho label to selected site
+    for i in range(len(x_range)):
+        s = x_range[i]
+        if psite == s:
+            break
+    
+    x_range[i] = f"{x_range[i]} [P]"
+    y_range[i] = f"[P] {y_range[i]}"
+    
+    # Default title
+    if not title:
+        title = g.graph["name"] + " - Distance Matrix"
 
-        # TODO: store sorting function inside a dict so can be used like a case-switch thing
-        if aa_order == 'seq':
-            x_range = sorted(x_range, key=lambda x: int(x.split(':')[-1]))
-        elif aa_order == 'euclidean':
-            # sort ascending distance
-            pass
-        elif aa_order == 'hydro':
-            # hydrophobicity ascending
-            ordering = "IVLFCMAWGTSYPHNDQEKR"
-            x_range = sorted(x_range, key=lambda res: [ordering.index(a) for a in aa3to1(res.split(':')[1])]) 
-
-        else: 
-            raise ValueError(f"'{aa_order}' isn't a valid axis ordering.")
-         
-        
-        # sequence order (ascending)
-
-
-        
-        y_range = x_range.copy()
-        
-        # TODO sort by distance
-        
-        # add phospho label to selected site
-        for i in range(len(x_range)):
-            s = x_range[i]
-            if psite == int(s.split(':')[-1]):
-                break
-        
-        x_range[i] = f"{x_range[i]} [P]"
-        y_range[i] = f"[P] {y_range[i]}"
-        
-        
-        
-        if not title:
-            title = g.graph["name"] + " - Distance Matrix"
-    else:
-        x_range = list(range(dist_mat.shape[0]))
-        y_range = list(range(dist_mat.shape[1]))
-        if not title:
-            title = "Distance matrix"
 
     if use_plotly:
         fig = px.imshow(
@@ -545,14 +499,15 @@ def motif_asteroid_plot(
 
     nodes: Dict[int, List[str]] = {0: [node_id]}
     node_list: List[str] = [node_id]
+
     # Iterate over the number of hops and extract nodes in each shell
-    for i in range(1, k):
+    for i in range(1, k+1):
         subgraph = extract_k_hop_subgraph(g, node_id, k=i)
         candidate_nodes = subgraph.nodes()
         # Check we've not already found nodes in the previous shells
         nodes[i] = [n for n in candidate_nodes if n not in node_list]
         node_list += candidate_nodes
-    shells = [nodes[i] for i in range(k)]
+    shells = [nodes[i] for i in range(k+1)]
 
 
     #log.debug(f"Plotting shells: {shells}")
@@ -711,6 +666,60 @@ def motif_asteroid_plot(
     else:
         nx.draw_shell(subgraph, nlist=shells, with_labels=show_labels)
 
+
+'''
+Distance matrix in other orders
+Modified from graphein.protein.edges.distance by Naomi Warren
+'''
+def ordered_distmat(g: nx.graph, order: str) -> pd.DataFrame:
+    """
+    Compute pairwise Euclidean distances between every atom, ordering the matrix
+    by 'order'.
+    :raises: ValueError if ``g.graph['pdb_df']`` does not contain the required columns.
+    :return: pd.Dataframe of Euclidean distance matrix.
+    :rtype: pd.DataFrame
+    """
+
+    pdb_df = g.graph['pdb_df']
+
+    # Check df has the correct columns (not sure why it wouldn't? but ...)
+    if (
+        not pd.Series(["x_coord", "y_coord", "z_coord"])
+        .isin(pdb_df.columns)
+        .all()
+    ):
+        raise ValueError(
+            "Dataframe must contain columns ['x_coord', 'y_coord', 'z_coord']"
+        )
+
+    # Get the distances as a square matrix
+    eucl_dists = pdist(
+        pdb_df[["x_coord", "y_coord", "z_coord"]], metric="euclidean"
+    )
+    eucl_dists = pd.DataFrame(squareform(eucl_dists))
+
+    # Re-order the rows in the appropriate order
+    eucl_dists.index = pdb_df.node_id
+    eucl_dists.columns = pdb_df.node_id
+
+    cur_order = list(g.nodes)
+    # TODO: seems to be issue where g.nodes isn't consistent with g.graph['pdb_df'].
+    # TODO: need to work out why/where one is being modified and not the other.
+    print (f'Length of pdb_df: {len(pdb_df)}')
+    print (f'Length of g.nodes: {len(cur_order)}')
+
+    if order == 'seq':
+        # No changes required
+        return eucl_dists
+    elif order == 'hydro':
+        # Get the order from low to high hydrophobicity
+        ordering = "IVLFCMAWGTSYPHNDQEKR"
+        hydro_sorted = sorted(cur_order, key=lambda res: [ordering.index(a) for a in aa3to1(res.split(':')[1])])
+        # Re-index (i.e. switch rows and columns) in this order
+        eucl_dists = eucl_dists.reindex(hydro_sorted)
+        eucl_dists = eucl_dists.reindex(columns=hydro_sorted)
+
+    return eucl_dists
 
 """
 Get hydrophobicity map

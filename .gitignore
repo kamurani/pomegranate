@@ -1,7 +1,7 @@
 ### POMEGRANATE ###
 structures/
-
-saved_graphs/*
+saved_graphs/
+graphs/
 
 
 # Byte-compiled / optimized / DLL files

@@ -1,5 +1,7 @@
 import graphein.protein as gp
 import networkx.readwrite as nx
+import pandas as pd
+import numpy as np
 import json
 
 from definitions import SAVED_GRAPHS_DIR 
@@ -72,6 +74,20 @@ def g_to_json(g, prot_id, db_name='PDB'):
     # h = nx.json_graph.node_link_graph(json_data)
 
     # assert graphs_isomorphic(g, h), "Graphs are not isomorphic"
+
+'''
+Get graph back from json
+'''
+def load_prot_graph (json_graph):
+
+    # Load general graph
+    g = nx.json_graph.node_link_graph(json.loads(json_graph))
+
+    # Convert specific fields from strings
+    g.graph["pdb_df"] = pd.read_json(g.graph["pdb_df"])
+    g.graph["coords"] = np.array(g.graph["coords"])
+
+    return g
 
 '''
 DEBUGGING

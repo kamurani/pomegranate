@@ -7,6 +7,7 @@ from distutils.log import debug
 import dash
 from dash import Dash, dcc, html, Input, Output
 from tabs.seeMotif import motifVisualisationTab
+from tabs.clustering import clustering_tab
 
 PROTEIN_ID = "default"
 
@@ -101,7 +102,7 @@ def render_content(tab):
             )
         ])
     elif tab == 'clustering':
-        return html.H3('Look how cool our clusters are')
+        return clustering_tab()
     elif tab == 'documentation':
         return html.H3('Documentation')
 

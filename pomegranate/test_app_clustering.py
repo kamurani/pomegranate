@@ -1,19 +1,23 @@
 import os
+from xml.etree.ElementInclude import include
 from dash import Dash, html, dcc, Input, Output
 import pandas as pd
 import plotly.express as px
 
 
 from definitions import EMBEDDINGS_PATH, STRUCTURE_HUMAN_PATH
+from utils.amino_acid import aa1letter
 from visualisation.plot import motif_plot_distance_matrix
 from protein.phosphosite import get_protein_graph
 
 from graphein.protein.visualisation import plot_distance_matrix
+from graphein.utils.utils import protein_letters_3to1_all_caps as aa3to1
+
 
 import networkx as nx
 
 
-from typing import Dict, List, Union
+from typing import Callable, Dict, List, Union
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -44,7 +48,13 @@ app.layout = html.Div([
                 'tSNE',
                 id='dim-reduction-method',
                 labelStyle={'display': 'inline-block', 'marginTop': '5px'}
-            )
+            ),
+            dcc.Checklist(id='selected-psite-residue-types',
+                options=['SER', 'THR', 'TYR', 'HIS'],
+                value=['SER', 'THR', 'TYR'],
+                inline=True,
+                style={'display': 'inline-block'},
+            ),
         ],
         style={'width': '49%', 'display': 'inline-block'}),
 
@@ -95,16 +105,19 @@ app.layout = html.Div([
 
 @app.callback(
     Output('clustering-scatter', 'figure'),
+    Input('selected-psite-residue-types', 'value'),
     Input('clustering-which-proteome', 'value'),
     Input('dim-reduction-method', 'value'),
     Input('which-visualisation-method', 'value'),
     Input('visualisation-options', 'value'),
     Input('slider', 'value'))
-def update_graph(proteome, dim_reduction_method,
+def update_graph(include_residues, proteome, dim_reduction_method,
                  visualisation_method, visualisation_option,
                  slider_value):
 
+    print("Residues:",include_residues)
 
+    residues = include_residues
     # Use slider value to get subset of data
 
     # TODO:
@@ -117,8 +130,52 @@ def update_graph(proteome, dim_reduction_method,
     xaxis_type = "Linear"
     yaxis_type = "Linear"
 
+    # SPLIT DATAFRAME 
+    df[['Chain ID', 
+        'Phosphosite Residue',
+        'Phosphosite Sequence Position']] = df.Phosphosite.apply(
+            lambda x: pd.Series(str(x).split(':'))
+        )
+
     # FILTER
     dff = df[df['Set'] == proteome] 
+
+
+    
+
+    """Returns a function that can filter a dataframe of residue IDs"""
+    def get_residue_filter(
+        residues: Union[List[str], str],
+        invert: bool = False,
+    ) -> Callable:
+        """
+        :param residues: Either a string containing 1-letter codes. 
+        :type residues: Union[List[str], str] 
+        :param invert: Return True if the input is NOT in the specified list of residues.  Defaults to ``False``. 
+        :type invert: bool
+
+
+        To allow for all residues (i.e. apply no filtering), an empty list can be supplied with ``invert`` set to ``True``.
+        
+        """
+        if type(residues) == str: # String containing 1-letter codes
+            residues = residues.upper()
+        else:   # List
+            residues = "".join(aa1letter(x.upper()) for x in residues)
+
+
+        return lambda x: not invert if (aa3to1(x.split(':')[1]) in residues) else invert
+
+        A, B = True, False 
+        if invert: A, B = B, A
+
+
+    # If no residues are selected, include all. 
+    filt = get_residue_filter(residues, invert=(not residues))
+
+    colour_by = "Phosphosite Residue"
+
+    dff = dff[dff['Phosphosite'].apply(filt)]
     dff = dff[dff['Method'] == dim_reduction_method]
 
     kinase_labels = dff["Kinase"].unique()
@@ -126,22 +183,30 @@ def update_graph(proteome, dim_reduction_method,
     print(kinase_labels)
 
     fig = px.scatter(
+        #name=f"{dim_reduction_method} clustering of motifs from {proteome}",
         data_frame=dff,
-        x=dff['X'],
-        y=dff['Y'],
+        x='X',
+        y='Y',
+        color=colour_by,
+
         hover_name=dff['Protein ID'], #TODO: combine this with psite location to get name on hover.  with name of kinase. 
-        custom_data=dff[['Protein ID', 'Phosphosite', 'Kinase']],
+
+
+        #custom_data=dff[['Protein ID', 'Phosphosite', 'Kinase']],
 
     )
 
     #fig.update_traces(customdata=dff['Kinase'])
-    fig.update_traces(customdata=dff['Phosphosite'])
+    fig.update_traces(customdata=dff[['Protein ID', 'Phosphosite', 'Kinase']])
 
     fig.update_traces(
         hovertemplate="<br>".join([
-        "ColX: %{x}",
-        "ColY: %{y}",
-        "Col1: %{customdata}",
+        "%{customdata[0]}",
+        "Kinase: %{customdata[2]}",
+        "",
+        "X: %{x}",
+        "Y: %{y}",
+        
         #"Col2: %{customdata[1]}",
     ])
     )
@@ -198,6 +263,8 @@ def update_vis_1(
 
 
     data = hoverData['points'][0]['customdata']
+
+    print(f"data: {data}")
 
 
     name = data[0]

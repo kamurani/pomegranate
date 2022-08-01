@@ -24,37 +24,99 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets)
 
 
+
+
+
+
 """
 Read in data
 """
 df = pd.read_csv(EMBEDDINGS_PATH)
 
-graphs: Dict = {str, nx.Graph} # graphs[protein_id]
+graphs: Dict[str, nx.Graph] # graphs[protein_id]
 
 
 # TODO: read in graphs from .json savefile 
 
+"""
+TODO
+
+- load all distance matrices (from savefile; or generate on app start) 
+- hash from f"{graph_id} @ {node_id}"
+
+
+
+
+"""
+
+
+
+
 app.layout = html.Div([
     html.Div([
+        
+        # row
+        html.Div([
+            html.Div(
+                [
+                    html.Label(
+                        ['Method'], style={'font-weight': 'bold', "text-align": "left"}
+                    ),
+                    dcc.RadioItems(
+                        ['tSNE', 'UMAP'],
+                        'tSNE',
+                        id='dim-reduction-method',
+                        labelStyle={'display': 'inline-block', 'marginTop': '5px'}
+                    ),
+                ], style={'display': 'inline-block'},
+            ),
+            html.Div(
+                [
+                    html.Label(
+                        ['Phosphosite Residues'], style={'font-weight': 'bold', "text-align": "left"}
+                    ),
+                    dcc.Checklist(id='selected-psite-residue-types',
+                        options=['SER', 'THR', 'TYR', 'HIS'],
+                        value=['SER', 'THR', 'TYR'],
+                        inline=True,
+                        style={'display': 'inline-block'},
+                        labelStyle={'display': 'inline-block', 'marginTop': '5px'},
+                    ),
+                ], style={"margin-left": "15px", 'display': 'inline-block'},
+            ),
+            html.Div(
+                [
+                    html.Label(
+                        ['Colour by'], style={'font-weight': 'bold', "text-align": "left"}
+                    ),                   
+                    
+                    dcc.RadioItems(id='colour-by',
+                        options=['Residue', 'Kinase', 'Average RSA', 'Cluster'],
+                        value='Kinase',
+                        inline=True,
+                        labelStyle={'display': 'inline-block', 'marginTop': '5px'},
+                        style={'display': 'inline-block'}
+                    ),
+                ], style={"margin-left": "20px", 'display': 'inline-block'},
+            ),
+
+
+        ]),
+        # row 
+        # TODO
+
+        
 
         html.Div([
+            html.Label(
+                ['Proteome'], style={'font-weight': 'bold', "text-align": "left"}
+            ),
             dcc.Dropdown(
                 df['Set'].unique(), 
                 "Human (known kinases)",
                 id='clustering-which-proteome',
             ),
-            dcc.RadioItems(
-                ['tSNE', 'UMAP'],
-                'tSNE',
-                id='dim-reduction-method',
-                labelStyle={'display': 'inline-block', 'marginTop': '5px'}
-            ),
-            dcc.Checklist(id='selected-psite-residue-types',
-                options=['SER', 'THR', 'TYR', 'HIS'],
-                value=['SER', 'THR', 'TYR'],
-                inline=True,
-                style={'display': 'inline-block'},
-            ),
+             
         ],
         style={'width': '49%', 'display': 'inline-block'}),
 
@@ -64,12 +126,7 @@ app.layout = html.Div([
                 'tSNE',
                 id='which-visualisation-method'
             ),
-            dcc.RadioItems(
-                ['TODO', 'TODO'],
-                'TODO',
-                id='visualisation-options',
-                labelStyle={'display': 'inline-block', 'marginTop': '5px'}
-            )
+            
         ], style={'width': '49%', 'float': 'right', 'display': 'inline-block'})
     ], style={
         'padding': '10px 5px'
@@ -109,11 +166,12 @@ app.layout = html.Div([
     Input('clustering-which-proteome', 'value'),
     Input('dim-reduction-method', 'value'),
     Input('which-visualisation-method', 'value'),
-    Input('visualisation-options', 'value'),
-    Input('slider', 'value'))
+    Input('colour-by', 'value'),
+    Input('slider', 'value'),
+)
 def update_graph(include_residues, proteome, dim_reduction_method,
-                 visualisation_method, visualisation_option,
-                 slider_value):
+                 visualisation_method, colour_by,
+                 slider_value): 
 
     print("Residues:",include_residues)
 
@@ -173,7 +231,9 @@ def update_graph(include_residues, proteome, dim_reduction_method,
     # If no residues are selected, include all. 
     filt = get_residue_filter(residues, invert=(not residues))
 
-    colour_by = "Phosphosite Residue"
+    
+    if colour_by == "Residue": colour = 'Phosphosite Residue'
+    else: colour = colour_by
 
     dff = dff[dff['Phosphosite'].apply(filt)]
     dff = dff[dff['Method'] == dim_reduction_method]
@@ -187,7 +247,7 @@ def update_graph(include_residues, proteome, dim_reduction_method,
         data_frame=dff,
         x='X',
         y='Y',
-        color=colour_by,
+        color=colour,
 
         hover_name=dff['Protein ID'], #TODO: combine this with psite location to get name on hover.  with name of kinase. 
 
@@ -297,7 +357,7 @@ def update_vis_1(
     # Get figure
     #fig = motif_plot_distance_matrix(g=g, psite=psite)
 
-    
+    fig = motif_plot_distance_matrix(graphs[f"{prot_id} @ {psite}"])
     
     return fig
 

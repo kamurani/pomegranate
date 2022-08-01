@@ -266,6 +266,9 @@ def test_labels_list(graphs: List, labels: List):
 @c.argument(
     'graphs', nargs=1,
 )
+@c.argument(
+    'savepath', nargs=1
+)
 @c.option(
     "--train-method",
     type=c.Choice(['graph', 'node'], case_sensitive=False),
@@ -311,6 +314,7 @@ def test_labels_list(graphs: List, labels: List):
 #@c.argument('graphs', nargs=1)
 def main(
     graphs,
+    savepath,
     train_method,
     epochs,
     batch_size,
@@ -325,8 +329,13 @@ def main(
 
     graph_path = Path(graphs)
 
-    if train_method == "graph": train_method = "gcn-graph-classification"
-    elif train_method == "node": train_method = "node-classification"
+    
+    if train_method == "graph": 
+        train_method = "gcn-graph-classification"
+        train_name = "gcn"
+    elif train_method == "node": 
+        train_method = "node-classification"
+        train_name = "gcn-node"
 
     
     # TODO: autodetect which file to use as infile, if directory is given.
@@ -350,6 +359,11 @@ def main(
     save_path = os.path.join(parent, "embeddings")
     csv_path  = os.path.join(parent, "embeddings_output.csv")
 
+    if os.path.isdir(savepath):
+        filename = f"EM_{train_name}_E{epochs}.csv"
+        csv_path = os.path.join(savepath, filename)
+        print(f"Saving CSV to {csv_path}")
+
     print(f"Input file is {in_path}.")
 
     # Unpickle
@@ -364,7 +378,7 @@ def main(
 
     original_amt = len(loaded)
     if num_graphs > 0:  # by default, use all 
-        loaded = loaded[0:min(original_amt, num_graphs)-1]
+        loaded = loaded[0:min(original_amt, num_graphs)]
 
     if verbose: 
         amt = num_graphs if num_graphs > 0 else "all"

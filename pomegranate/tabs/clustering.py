@@ -21,13 +21,15 @@ import pandas as pd
 import plotly.express as px
 
 
-from definitions import EMBEDDINGS_PATH, STRUCTURE_HUMAN_PATH
+from definitions import EMBEDDINGS_PATH, STRUCTURE_HUMAN_PATH, SAVED_CLUSTER_GRAPHS_PATH
 from utils.amino_acid import aa1letter
 from visualisation.plot import motif_plot_distance_matrix
 from protein.phosphosite import get_protein_graph
 
 from graphein.protein.visualisation import plot_distance_matrix
 from graphein.utils.utils import protein_letters_3to1_all_caps as aa3to1
+
+from utils.clustering_functions import construct_graphs
 
 
 import networkx as nx
@@ -41,7 +43,14 @@ Read in data
 """
 df = pd.read_csv(EMBEDDINGS_PATH)
 
-graphs: Dict[str, nx.Graph] # graphs[protein_id]
+graphs: Dict[str, nx.Graph] = construct_graphs(
+    df=df,
+    pdb_dir=STRUCTURE_HUMAN_PATH,
+    out_dir=SAVED_CLUSTER_GRAPHS_PATH,
+) 
+# graphs[protein_id]
+
+
 
 
 """
@@ -236,7 +245,7 @@ def update_graph(include_residues, proteome, dim_reduction_method,
 
     kinase_labels = dff["Kinase"].unique()
 
-    print(kinase_labels)
+    #print(kinase_labels)
 
     fig = px.scatter(
         #name=f"{dim_reduction_method} clustering of motifs from {proteome}",
@@ -244,6 +253,8 @@ def update_graph(include_residues, proteome, dim_reduction_method,
         x='X',
         y='Y',
         color=colour,
+        color_continuous_scale=px.colors.sequential.Viridis,
+        color_discrete_sequence=px.colors.qualitative.Dark24,
 
         hover_name=dff['Protein ID'], #TODO: combine this with psite location to get name on hover.  with name of kinase. 
 
@@ -321,6 +332,8 @@ def update_vis_1(
     data = hoverData['points'][0]['customdata']
 
     print(f"data: {data}")
+
+
 
 
     name = data[0]

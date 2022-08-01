@@ -1,7 +1,8 @@
 import os
 from typing import Dict
 import graphein.protein as gp
-import networkx.readwrite as nx
+
+import networkx as nx
 import pandas as pd
 import numpy as np
 import json
@@ -12,7 +13,7 @@ def g_to_json(g, prot_id, db_name='PDB', save_path=SAVED_GRAPHS_DIR):
 
     # Test if g is already in JSON format
     try:
-        nx.json_graph.node_link_graph(g)
+        nx.readwrite.json_graph.node_link_graph(g)
         print("good")
         return g
     except:
@@ -53,14 +54,14 @@ def g_to_json(g, prot_id, db_name='PDB', save_path=SAVED_GRAPHS_DIR):
                         except AttributeError:
                             continue
 
-        j_graph = nx.json_graph.node_link_data(g)
+        j_graph = nx.readwrite.json_graph.node_link_data(g)
 
         # Write the graph to a JSON file
         graphs_dir = save_path
         filename = f"{prot_id}_{db_name}.json"
         path = os.path.join(save_path, filename)
         with open(path, 'w') as f:
-            tmp = nx.json_graph.node_link_data(g)
+            tmp = nx.readwrite.json_graph.node_link_data(g)
             f.write(json.dumps(tmp))
 
         return j_graph
@@ -94,7 +95,7 @@ def load_prot_graph (
     """
 
     # Load general graph
-    g: nx.Graph = nx.json_graph.node_link_graph(json.loads(json_graph))
+    g: nx.Graph = nx.readwrite.json_graph.node_link_graph(json.loads(json_graph))
 
     # Convert specific fields from strings
     g.graph["pdb_df"] = pd.read_json(g.graph["pdb_df"])

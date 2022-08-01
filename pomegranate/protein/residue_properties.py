@@ -1,3 +1,5 @@
+from typing import Dict
+
 HYDROPHOBICITY_SCALES: Dict[str, Dict[str, float]] = {
     "kd": { # kdHydrophobicity (a) 
         "ILE": 4.5,

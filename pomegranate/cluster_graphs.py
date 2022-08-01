@@ -526,6 +526,10 @@ def main(
                 learning_rate='auto'
             )
             two_d = tsne.fit_transform(embeddings)
+
+            from umap import UMAP
+            umap_2d = UMAP(n_components=2, init='random', random_state=0)
+            proj_2d = umap_2d.fit_transform(embeddings)
             
             if verbose: print(f"Saving to {csv_path}...")
 
@@ -551,6 +555,20 @@ def main(
                         'Y'             : two_d[i, 1],
                     }
                     writer.writerow(row)
+
+                dim_method = 'UMAP'
+                for i, gd in enumerate(graph_dicts):
+                    row = {
+                        'Protein ID'    : gd['name'],
+                        'Phosphosite'   : gd['res'], 
+                        'Kinase'        : gd['kinase'], 
+                        'Set'           : protein_set, 
+                        'Method'        : dim_method, 
+                        'X'             : proj_2d[i, 0], 
+                        'Y'             : proj_2d[i, 1],
+                    }
+                    writer.writerow(row)
+
 
     elif train_method == "node-classification":
         

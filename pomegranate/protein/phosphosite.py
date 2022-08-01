@@ -8,7 +8,7 @@ __all__ = ['get_protein_graph', 'get_protein_subgraph_radius',
 
 
 ### DEFINITIONS
-from definitions import ROOT_DIR, STRUCTURE_PATH
+from definitions import ROOT_DIR, STRUCTURE_PATH, SAVED_PDB_DIR, SAVED_GRAPHS_DIR
 
 ### External libraries
 import os
@@ -26,7 +26,7 @@ from graphein.protein.visualisation import plot_distance_matrix, plotly_protein_
 from graphein.protein.subgraphs import extract_subgraph_from_point, extract_k_hop_subgraph, extract_subgraph, extract_surface_subgraph
 
 
-from graphein.protein.edges.distance import *	
+import graphein.protein.edges.distance as g_dist
 
 # Custom plot function
 from visualisation.plot import motif_plot_distance_matrix
@@ -36,20 +36,17 @@ TODO:
 - colour by similarity (AA) instead of distance
 '''
 
-
-
-
-
 # TODO convert from single to triple letter codes
 
 '''
 Return phosphosites (sorted)
 '''
-def get_phosphosites(g, residues=['SER', 'THR', 'TYR', 'HIS']):
+def get_phosphosites(g, residues=['SER', 'THR', 'TYR', 'HIS'], rsa_threshold=0.5):
     
-    psites = extract_subgraph(g, 
-                                return_node_list=True,
-                                residue_types=residues)
+    surface_nodes = extract_subgraph(g, rsa_threshold=rsa_threshold)
+    psites = extract_subgraph(surface_nodes,
+                            return_node_list=True,
+                            residue_types=residues)
     
     psites_sorted = sorted(psites, key=lambda x: int(x.split(':')[-1]))
     return psites_sorted
@@ -57,10 +54,6 @@ def get_phosphosites(g, residues=['SER', 'THR', 'TYR', 'HIS']):
 # TODO: make this function receive a `list` of dict(id=id, site=site) 
 # this function then returns a list of graphs
 def get_protein_graph(id=None, config=None, database='PDB'):
-
-    
-    
-
     # Graph configuration
     if not config:
         config = ProteinGraphConfig()   # default graph config file from graphein
@@ -69,14 +62,14 @@ def get_protein_graph(id=None, config=None, database='PDB'):
 
         # Edge functions
         edge_fns = [
-            add_aromatic_interactions,
-            add_hydrophobic_interactions,
-            add_aromatic_sulphur_interactions,
-            add_cation_pi_interactions,
-            add_disulfide_interactions,
-            add_hydrogen_bond_interactions,
-            add_ionic_interactions,
-            add_peptide_bonds
+            g_dist.add_aromatic_interactions,
+            g_dist.add_hydrophobic_interactions,
+            g_dist.add_aromatic_sulphur_interactions,
+            g_dist.add_cation_pi_interactions,
+            g_dist.add_disulfide_interactions,
+            g_dist.add_hydrogen_bond_interactions,
+            g_dist.add_ionic_interactions,
+            g_dist.add_peptide_bonds
             ]
 
         # Use structure path of already downloaded PDB file (if it exists) for DSSP calculation
@@ -90,27 +83,20 @@ def get_protein_graph(id=None, config=None, database='PDB'):
                                     pdb_path=pdb_path,
         )   
     
-<<<<<<< HEAD
-
-    protein_path = id + '.pdb'
-
-    if database in ['AlphaFold', 'SWISS_PROT']:
-        #NOTE: Might have to remove SWISS_PROT. Not all SP have AF structures
-        protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
-
-=======
     # NOTE: File paths use '\' in windows systems
     # NOTE: Need different prot_dir for each DB
-    prot_dir = '../examples/pdbs/'
-    protein_path = prot_dir + id + '.pdb'
+    protein_path = SAVED_PDB_DIR + id + '.pdb'
 
     if database in ['AlphaFold', 'SWISS_PROT']:
         #NOTE: Might have to remove SWISS_PROT. Not all SP have AF structures
         print("AF or SP")
-        protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
+        # NOTE: DEBUGGING: construct graph is always looking at examples/pdbs. Just put everything in examples/pdbs
+        # protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
+        protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=SAVED_PDB_DIR)
+        #protein_path = STRUCTURE_PATH + id + '.pdb'
         print("After")
 
->>>>>>> 699e6d4481baa3c2382dc4ff8a01d0654ff7e642
+    print(protein_path)
     # if use_alphafold:
     #     pdb_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
    
@@ -119,18 +105,9 @@ def get_protein_graph(id=None, config=None, database='PDB'):
     # if os.path.isfile(pdb_path):
     #     print(f"Using local PDB file for {id}.")
     #     g = construct_graph(config=config, pdb_path=pdb_path)
-<<<<<<< HEAD
-    if os.path.isfile(protein_path):
-        print(f"Using local file for {id}.")
-        g = construct_graph(config=config, pdb_path=protein_path)
-    else:
-        print(f"Retrieving {id}...")
-        g = construct_graph(config=config, pdb_code=id)
-=======
 
     # Check if graph exists
-    graph_dir= '../graphs'
-    graph_path = f'{graph_dir}/{id}_{database}.json'
+    graph_path = f'{SAVED_GRAPHS_DIR}/{id}_{database}.json'
     if os.path.isfile(graph_path):
         with open(graph_path, "r") as f:
             print(f"Using local graph for {id} from {database}")
@@ -139,14 +116,17 @@ def get_protein_graph(id=None, config=None, database='PDB'):
         # Graph doesn't exist
         if os.path.isfile(protein_path):
             print(f"Using local file for {id}.")
+            print(protein_path)
             g = construct_graph(config=config, pdb_path=protein_path)
+            #g = construct_graph(pdb_path=protein_path)
         else:
             print(f"Retrieving {id}...")
             if database == 'PDB':
                 g = construct_graph(config=config, pdb_code=id)
+                #g = construct_graph(pdb_code=id)
             else: # NOTE: FIX THIS. BAD STYLE. Same line as 119
                 g = construct_graph(config=config, pdb_path=protein_path)
->>>>>>> 699e6d4481baa3c2382dc4ff8a01d0654ff7e642
+                #g = construct_graph(pdb_path=protein_path)
 
     # TODO: check if file exists and download if not. 
    
@@ -159,26 +139,16 @@ def get_protein_graph(id=None, config=None, database='PDB'):
 Given graph ``g`` get subgraph within radius of psite, and surface residues above 
 ASA threshold. 
 '''
-def get_surface_motif(
-    g: nx.Graph = None, 
-    site: Union[int, str] = 1, 
-    r: float = 10.0, 
-    asa_threshold: float = 0.5,
-):
-    # res = list(g.nodes())[site-1]
-    # # print("res is", res)
-    # psite_node = g.nodes(data=True)[res]
-    
+def get_surface_motif(g, site, r=10, asa_threshold=0.5):
+
     s_g = get_protein_subgraph_radius(g=g, site=site, r=r)
-
-
 
     if asa_threshold:
         try:
-            surface = extract_surface_subgraph(s_g, asa_threshold, 
-                                                recompute_distmat=True,
-                                                filter_dataframe=True
-            )
+            surface = extract_surface_subgraph(s_g,
+                                               asa_threshold,
+                                               recompute_distmat=True,
+                                               filter_dataframe=True)
         except:
             raise ValueError("Specified graph does not have RSA metadata.")
 
@@ -193,31 +163,16 @@ def get_surface_motif(
 '''
 Given a graph ``g`` get a subgraph from radius and known phos site
 '''
-def get_protein_subgraph_radius(
-    g: nx.Graph = None, 
-    site: Union[int, str] = 1, 
-    r: float = 10.0,
-):
-   
-    if isinstance(site, str):
-        try:
-            site = int(site.split(':')[-1])
-        except ValueError:
-            raise ValueError("Specified phospho site isn't in correct format.")            
-        
-    # get centre point
-    #index = query['phosphosite'] - 1
-    index = site - 1
-    phos_point = np.array(g.graph['coords'][index]) #TODO: TURN BACK TO TUPLE IF LIST DOEESN'T WORK
+def get_protein_subgraph_radius(g, site, r=10.0):
 
-    print(phos_point)
-
+    # get centre point   
+    try:
+        x_y_z = node_coords(g, site)
+    except ValueError:
+        raise ValueError("Specified phospho site isn't in correct format.")       
     
     # Get subgraph
-    s_g = extract_subgraph_from_point(g, centre_point=phos_point, 
-                                        radius=r, 
-                                        recompute_distmat=True, 
-                                        filter_dataframe=True)
+    s_g = extract_subgraph_from_point(g, centre_point=x_y_z, radius=r)
     
     return s_g
     
@@ -232,3 +187,17 @@ def get_adjacency_matrix_plot(g=None, psite=1, title=None, order='seq'):
     #fig = plot_distance_matrix(g, title=title)
     fig = motif_plot_distance_matrix(g, psite=psite, title=title, aa_order=order)
     return fig
+
+# Get x, y, z coordinates from a given node in a graph
+# Input: - Graph g
+#        - str node (e.g. 'A:ARG:1')
+# Output: tuple (x, y, z)
+def node_coords(g, node):
+
+    df = g.graph['pdb_df']
+
+    coords = df.loc[df.node_id == node][['x_coord','y_coord','z_coord']]
+    if not coords.empty:
+        return coords.values[0]
+    else:
+        return None

@@ -37,15 +37,40 @@ import networkx as nx
 from typing import Callable, Dict, List, Union
 
 
+"""
+Load from save
+"""
+def load_graphs(
+
+):
+    pass
+
+
+
+"""
+Construct graphs and serialize
+"""
 def construct_graphs(
     df,
     pdb_dir: str, 
     out_dir: str = SAVED_CLUSTER_GRAPHS_PATH,
+    overwrite: bool = False, 
 
 ):
 
+    """
+    :param overwrite: If ``True``, ignore already existing files in ``out_dir`` with the same name and overwrite.
+    :type overwrite: bool
+    
+    """
+
     if not os.path.isdir(pdb_dir):
         raise ValueError(f"No specified directory for structures '{pdb_dir}'")
+
+    if not os.path.isdir(out_dir):
+        raise ValueError(f"No specified directory for JSON graphs '{out_dir}'")
+
+    print(f"Saving to {out_dir}")
 
     dff = df
     dff["Protein ID"] = dff["Protein ID"].apply(    # get just protein name
@@ -60,9 +85,24 @@ def construct_graphs(
     
     config = ProteinGraphConfig()
 
+    database = "AF2" # TODO: in future, this may be in the `df` to check for. 
+
     for prot, psite in [p.split() for p in dff['Psite ID'].unique()]:
         
+        name = f"{prot}_{psite}"
+
         pdb_path = f"{pdb_dir}/{prot}.pdb"
+
+        filename = name + f"_{database}.json"
+        
+        path = os.path.join(out_dir, filename)
+        #print(f"path: {path}")
+        if not overwrite and os.path.isfile(path):
+            print(f"Skipping {name} ...")
+            continue
+
+        #print(f"Constructing {name} ...")
+
         try: 
             g = construct_graph(config, pdb_path=pdb_path) 
 
@@ -77,9 +117,22 @@ def construct_graphs(
         except: 
             g = {}
 
-        name = f"{prot}_{psite}"
+
         g.name = name
-        graphs[name] = g
+
+        g_to_json(
+            g, 
+            prot_id=name,
+            db_name="AF2",
+            save_path=out_dir,
+        )
+
+        print(f"Saved.")
+        
+        
+        #graphs[name] = g    # DON'T store in memory for now; save to json file
+
+
         # TODO: only store adjacency matrix? 
 
     return graphs

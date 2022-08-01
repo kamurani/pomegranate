@@ -1,3 +1,4 @@
+import os
 import graphein.protein as gp
 import networkx.readwrite as nx
 import pandas as pd
@@ -6,7 +7,7 @@ import json
 
 from definitions import SAVED_GRAPHS_DIR 
 # import sys # For cmd line debugging
-def g_to_json(g, prot_id, db_name='PDB'):
+def g_to_json(g, prot_id, db_name='PDB', save_path=SAVED_GRAPHS_DIR):
 
     # Test if g is already in JSON format
     try:
@@ -54,8 +55,10 @@ def g_to_json(g, prot_id, db_name='PDB'):
         j_graph = nx.json_graph.node_link_data(g)
 
         # Write the graph to a JSON file
-        graphs_dir = SAVED_GRAPHS_DIR
-        with open(f"{graphs_dir}/{prot_id}_{db_name}.json", 'w') as f:
+        graphs_dir = save_path
+        filename = f"{prot_id}_{db_name}.json"
+        path = os.path.join(save_path, filename)
+        with open(path, 'w') as f:
             tmp = nx.json_graph.node_link_data(g)
             f.write(json.dumps(tmp))
 

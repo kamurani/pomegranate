@@ -889,7 +889,7 @@ def motif_asteroid_plot(
                 for k, v in nodes.items():
                     if n in v:
                         print(f"n: {n}")
-                        node_colours.append(aa2hydrophobicity(n.split(':')[1]))
+                        node_colours.append(5+aa2hydrophobicity(n.split(':')[1]))
         
         # TODO
         elif colour_nodes_by == "residue_name":
@@ -902,6 +902,10 @@ def motif_asteroid_plot(
             )
             # TODO colour by AA type
         node_trace = go.Scatter(
+            
+            #showscale=True,
+            
+
             x=node_x,
             y=node_y,
             text=list(subgraph.nodes()),
@@ -913,6 +917,10 @@ def motif_asteroid_plot(
                 colorscale="viridis",
                 reversescale=True,
                 color=node_colours,
+
+                cmin=0, 
+                cmax=5,
+                
                 size=node_sizes, 
                 colorbar=dict(
                     thickness=15,

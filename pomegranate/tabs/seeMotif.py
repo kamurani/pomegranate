@@ -18,6 +18,180 @@ from json_conversion.graphein_to_json import g_to_json, load_prot_graph
 # --------
 
 
+<<<<<<< HEAD
+=======
+#### HARDCODED PROTEIN FOR NOW; TODO: USE INPUT TO ASSIGN PROTEIN ####
+#prot_id = "Q9Y2X7"
+
+#prot_id = "4hhb" # PDB file.  Try using with extract_surface_subgraph. 
+#g = get_protein_graph(prot_id, config="asa", database)
+
+#psites = get_phosphosites(g)
+
+'''
+For protein input sidebar
+'''
+fnameDict = {'PDB': ['opt1_p', 'opt2_p', 'opt3_p'], 'SWISS_PROT': ['opt1_s', 'opt2_s'], 'AlphaFold': ['opt1_a']}
+
+names = list(fnameDict.keys())
+nestedOptions = fnameDict[names[0]]
+
+'''
+Generate variables and use get_protein_graph
+'''
+@callback(
+    Output('intermediate-value-prot', 'children'),
+    Input('db-dropdown', 'value'),
+    Input('prot-input', 'value'),
+)
+def process_prot_input(db_name, prot_id):
+    
+    g = get_protein_graph(prot_id, config="asa", database=db_name)
+<<<<<<< HEAD
+    inter_val = g_to_json(g)
+=======
+    inter_val = g_to_json(g, prot_id, db_name)
+>>>>>>> 699e6d4481baa3c2382dc4ff8a01d0654ff7e642
+    #return graph in json format
+    #print(f"inter_val type is {type(inter_val)}")
+    #print(f"inter_val dump type is {type(json.dumps(inter_val))}")
+    return json.dumps(inter_val)
+
+'''
+Generate psites
+'''
+@callback(
+    Output('intermediate-value-psites', 'data'),
+    Input('intermediate-value-prot', 'children'),
+    Input('selected-psite-residue-types', 'value')
+)
+def process_psite(graph, sites):
+    #print(f"Process psite 'graph' type is {type(graph)}")
+    tmp = json.loads(graph)
+    g = nx.json_graph.node_link_graph(tmp)
+    #print(f"Process psite 'g' (graph loads) type is {type(g)}")
+    psites = get_phosphosites(g, sites)
+    return json.dumps(psites)
+# TODO: add slider for ASA threshold (subgraph selection)
+
+
+'''
+Radius slider component
+'''
+def get_marks():
+
+    DEFAULT_MARKING = 10    # 10Å
+    BLUE_MARKING    = 3     #  3Å
+    
+    # Standard markings
+    keys = [1, 20, 30]
+    vals = [dict(label=f"{k}Å") for k in keys]
+    marks = dict(zip(keys, vals))
+    
+    # Coloured
+    marks[DEFAULT_MARKING]  = {'label': f'{DEFAULT_MARKING}Å',  'style': {'color': '#f50'}}
+    marks[BLUE_MARKING]     = {'label': f'{BLUE_MARKING}Å',     'style': {'color': '#77b0b1'}}
+    
+    return marks
+
+'''
+ASA Slider component
+'''
+DEFAULT_ASA_THRESHOLD = 0.5
+
+keys = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+vals = [dict(label=f"{k} ASA") for k in keys]
+ASA_THRESHOLD_SLIDER_MARKS = dict(zip(keys, vals))
+
+
+
+'''
+@callback(Output('intermediate-value', 'data'), Input('selected-psite-dropdown', 'value'))
+def update_selected_psite(value):
+    
+    
+    s_g = get_protein_subgraph_radius(g1, site=psite, r=value)
+'''
+
+
+'''
+Phosphosite dropdown menu
+'''
+# @callback(
+#     Output('selected-psite-dropdown', 'options'),
+#     Input('selected-psite-residue-types', 'value'),
+#     Input('intermediate-value-prot', 'children'),
+#     )
+# def update_psite_dropdown(residues, graph):
+# #def update_psite_dropdown(residues):
+    
+#     tmp = json.loads(graph)
+#     g = nx.json_graph.node_link_graph(tmp)
+#     g1 = g.copy()
+#     return get_phosphosites(g1, residues)
+@callback(
+    Output('selected-psite-dropdown', 'options'),
+    Input('selected-psite-residue-types', 'value'),
+    Input('intermediate-value-psites', 'data'),
+    )
+def update_psite_dropdown(residues, psites):
+    tmp = psites.replace('\"', '')
+    tmp = tmp.replace('[', '')
+    tmp = tmp.replace(']', '')
+    options = list(tmp.split(","))
+<<<<<<< HEAD
+    print(f"phos dropdown options type is {type(options)}")
+=======
+    #print(f"phos dropdown options type is {type(options)}")
+>>>>>>> 699e6d4481baa3c2382dc4ff8a01d0654ff7e642
+    return options
+
+'''
+Adjacency matrix plot
+'''
+@callback(
+    Output('graph-adjacency-matrix', 'figure'),
+    Input('radius-threshold-slider', 'value'),
+    Input('asa-threshold-slider', 'value'),
+    Input('selected-psite-dropdown', 'value'),
+    Input('axis-order-dropdown', 'value'),
+    Input ('intermediate-value-prot', 'children'),
+    )   
+    
+def update_graph(radius, asa_threshold, psite, axis_order, graph):
+#def update_graph(radius, asa_threshold, psite, axis_order):
+    # Get new subgraph
+<<<<<<< HEAD
+    print(f"inter psite type is {type(psite)}")
+=======
+    #print(f"inter psite type is {type(psite)}")
+>>>>>>> 699e6d4481baa3c2382dc4ff8a01d0654ff7e642
+    tmp = json.loads(graph)
+    g = nx.json_graph.node_link_graph(tmp)
+    g1 = g.copy()
+
+    g1.graph["pdb_df"] = pd.read_json(g1.graph["pdb_df"])
+    g1.graph["coords"] = np.array(g1.graph["coords"])
+    
+    if not psite:
+        psite = get_phosphosites(g1)[0]
+    
+    s_g = get_surface_motif(g1, site=psite, r=radius, asa_threshold=asa_threshold)
+    # update figure 
+    name = g.graph["name"]
+    title = name.upper() + f""" STRUCTURAL MOTIF @ {psite}, threshold: {radius} Å
+                                <br>Surface accessibility threshold: {asa_threshold}"""
+    figure = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order)
+      
+    return figure
+
+
+'''
+Process Protein Input
+'''
+
+
+>>>>>>> parent of 3ce6167 (outdated)
 '''
 Layout
 '''
@@ -203,3 +377,45 @@ Debugging to show input
 )
 def showInput(db, prot_id):
     return u'DB: {} ID: {}'.format(db, prot_id)
+<<<<<<< HEAD
+=======
+
+def sidebarTab():
+<<<<<<< HEAD
+    return html.Div(
+        
+=======
+    return html.Div(        
+>>>>>>> 699e6d4481baa3c2382dc4ff8a01d0654ff7e642
+        id="sidebar",
+        children=[
+            html.H3("Find a protein"),
+            html.Hr(),
+            dcc.Dropdown(
+                id='db-dropdown',
+                options=[{'label':name, 'value':name} for name in names],
+                value = list(fnameDict.keys())[0],
+                style={'width': '80%'},
+            ),
+            # dcc.Dropdown(
+            #     id='opt-dropdown',
+            #     style={'width': '20%'},
+            # ),
+            dcc.Input(
+                id="prot-input",
+                type="text",
+<<<<<<< HEAD
+                value="4hhb", # TODO: REMOVE THIS AFTER TESTING
+=======
+                #value="4hhb", # TODO: REMOVE THIS AFTER TESTING
+>>>>>>> 699e6d4481baa3c2382dc4ff8a01d0654ff7e642
+                placeholder="Protein ID",
+                style={'width': '80%'},
+                debounce=True,
+            ),
+            dcc.Store(id='intermediate-value-prot'),
+            dcc.Store(id='intermediate-value-psites'),
+            html.Div(id='input-show'), # DEBUGGING inputs
+        ],
+    )
+>>>>>>> parent of 3ce6167 (outdated)

@@ -47,7 +47,7 @@ df = pd.read_csv(EMBEDDINGS_PATH)
 
 graphs: Dict[str, nx.Graph]
 
-
+"""
 graphs = construct_graphs(
     df=df,
     pdb_dir=STRUCTURE_HUMAN_PATH,
@@ -63,7 +63,7 @@ graphs = construct_graphs(
 ) 
 # graphs[protein_id]
 
-
+"""
 
 
 

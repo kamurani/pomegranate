@@ -25,7 +25,7 @@ def motifVisualisationTab ():
         dcc.Graph(id='graph-adjacency-matrix', className='matrix-display tab-component'),
         dcc.Graph(id='asteroid-plot', className='graph-display tab-component'),
         html.Div(className='options tab-component', children=[
-            html.H3('Phosphosite of interest:'),
+            html.H3('Select Phosphosite:'),
             dcc.Checklist(id='selected-psite-residue-types',
                 options=['SER', 'THR', 'TYR', 'HIS'],
                 value=['SER', 'THR', 'TYR'],
@@ -37,12 +37,29 @@ def motifVisualisationTab ():
                 # value = psites[0],
                 style={'width': '80%'}
             ),
-            dcc.Dropdown(
-                id='axis-order-dropdown',
-                options=[{'label':"Sequence position", 'value': "seq"}, 
-                    {'label':"Hydrophobicity", 'value':"hydro"}],
-                value="hydro",
-                style={'width': '80%'}
+            html.Br(),
+            html.Div(children=[
+                html.H4('Order matrix by ', style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0'}),
+                dcc.Dropdown(
+                    id='axis-order-dropdown',
+                    options=[{'label':"Sequence position", 'value': "seq"}, 
+                        {'label':"Hydrophobicity", 'value':"hydro"}],
+                    value="hydro",
+                    style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0', 'width':'200px'}
+                )],
+                style={'height':'30px'}
+            ),
+            html.Br(),
+            html.Div(children=[
+                html.H4('Grayscale? ', style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0'}),
+                dcc.Dropdown(
+                    id='colour-dropdown',
+                    options=[{'label':"No", 'value': "viridis_r"}, 
+                        {'label':"Yes", 'value':"gray_r"}],
+                    value="viridis_r",
+                    style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0', 'width':'200px'}
+                )],
+                style={'height':'30px'}
             )
         ]),
         html.Div(
@@ -153,9 +170,9 @@ Adjacency matrix plot
     Input('axis-order-dropdown', 'value'),
     Input ('intermediate-value-prot', 'children'),
     Input('selected-psite-residue-types', 'value'),
+    Input('colour-dropdown', 'value')
     )   
-    
-def update_graphs(radius, asa_threshold, psite, axis_order, graph, sel_res_types):
+def update_graphs(radius, asa_threshold, psite, axis_order, graph, sel_res_types, colour):
 #def update_graph(radius, asa_threshold, psite, axis_order):
     # Get new subgraph
     #print(f"inter psite type is {type(psite)}")
@@ -170,7 +187,7 @@ def update_graphs(radius, asa_threshold, psite, axis_order, graph, sel_res_types
     name = g1.graph["name"]
     title = name.upper() + f""" STRUCTURAL MOTIF @ {psite}, threshold: {radius} Å
                                 <br>Surface accessibility threshold: {asa_threshold}"""
-    adj_mat = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order)
+    adj_mat = get_adjacency_matrix_plot(s_g, psite=psite, title=title, order=axis_order, colour=colour)
     
     # Update asteroid plot
     # Add edges to graph by distance

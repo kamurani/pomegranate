@@ -180,12 +180,12 @@ def get_protein_subgraph_radius(g, site, r=10.0):
 # TODO: make separate function for extracting subgraph that is independent of the get_plot
 
 
-def get_adjacency_matrix_plot(g=None, psite=1, title=None, order='seq'):
+def get_adjacency_matrix_plot(g=None, psite=1, title=None, order='seq', colour='viridis_r'):
     
     # subgraph
     
     #fig = plot_distance_matrix(g, title=title)
-    fig = motif_plot_distance_matrix(g, psite=psite, title=title, aa_order=order)
+    fig = motif_plot_distance_matrix(g, psite=psite, title=title, aa_order=order, colour=colour)
     return fig
 
 # Get x, y, z coordinates from a given node in a graph

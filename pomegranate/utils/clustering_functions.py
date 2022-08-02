@@ -27,6 +27,8 @@ from graphein.utils.utils import protein_letters_3to1_all_caps as aa3to1
 
 from graphein.protein.config import ProteinGraphConfig
 from graphein.protein.graphs import construct_graph
+from graphein.protein.config import DSSPConfig
+from graphein.protein.features.nodes import rsa
 
 
 
@@ -82,8 +84,10 @@ def construct_graphs(
     assert os.path.isdir(pdb_dir)
 
     graphs: Dict[str, nx.Graph] = {}
+    dssp_config = DSSPConfig()
     
-    config = ProteinGraphConfig()
+     
+    
 
     database = "AF2" # TODO: in future, this may be in the `df` to check for. 
 
@@ -91,7 +95,7 @@ def construct_graphs(
         
         name = f"{prot}_{psite}"
 
-        pdb_path = f"{pdb_dir}/{prot}.pdb"
+        pdb_path = os.path.join(pdb_dir, f"{prot}.pdb")
 
         filename = name + f"_{database}.json"
         
@@ -103,8 +107,19 @@ def construct_graphs(
 
         #print(f"Constructing {name} ...")
 
+        #if True:
         try: 
-            g = construct_graph(config, pdb_path=pdb_path) 
+        
+            config = ProteinGraphConfig(
+                
+                #pdb_dir=pdb_dir,
+                graph_metadata_functions=[rsa],
+                dssp_config=dssp_config,
+            )
+            g = construct_graph(
+                pdb_path=pdb_path,
+                config=config, 
+            ) 
 
             """
             Note: ideally we would be obtaining whole graph to be used later; but for performance 
@@ -114,20 +129,23 @@ def construct_graphs(
             """
             g = get_surface_motif(g, site=psite, r=10, asa_threshold=0) 
 
+            g.name = name
+
+        #try: 
+            g_to_json(
+                g, 
+                prot_id=name,
+                db_name="AF2",
+                save_path=out_dir,
+            )
+
+
         except: 
             g = {}
+            print(f"Failed.")
 
-
-        g.name = name
-
-        g_to_json(
-            g, 
-            prot_id=name,
-            db_name="AF2",
-            save_path=out_dir,
-        )
-
-        print(f"Saved.")
+        
+        
         
         
         #graphs[name] = g    # DON'T store in memory for now; save to json file

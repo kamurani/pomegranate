@@ -1,5 +1,5 @@
 import os
-from typing import Dict
+from typing import Dict, Union
 import graphein.protein as gp
 
 import networkx as nx
@@ -84,18 +84,22 @@ def g_to_json(g, prot_id, db_name='PDB', save_path=SAVED_GRAPHS_DIR):
 Get graph back from json
 '''
 def load_prot_graph (
-    json_graph: Dict, 
+    json_graph: Union[Dict, str], 
 ) -> nx.Graph:
 
     """
-    :param json_graph: JSON object that represents a NetworkX graph.  Can be loaded in from a JSON file. 
+    :param json_graph: JSON string or JSON object that represents a NetworkX graph.  Can be loaded in from a JSON file. 
     :type json_graph: Dict
     :return: NetworkX protein graph
     :rtype: nx.Graph 
     """
 
     # Load general graph
-    g: nx.Graph = nx.readwrite.json_graph.node_link_graph(json.loads(json_graph))
+
+    if type(json_graph) == str: 
+        json_graph = json.loads(json_graph)
+    
+    g: nx.Graph = nx.readwrite.json_graph.node_link_graph(json_graph)
 
     # Convert specific fields from strings
     g.graph["pdb_df"] = pd.read_json(g.graph["pdb_df"])

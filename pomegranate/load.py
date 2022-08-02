@@ -63,6 +63,25 @@ class GraphDict:
 
 
 """
+Get average RSA for a graph (or subgraph)
+"""
+def get_avg_rsa(
+    g: nx.Graph, 
+) -> float:
+
+    sum = 0
+    num = len(list(g.nodes()))
+    for k, n in g.nodes(data=True):
+        sum += float(n['rsa'])
+
+    return sum / num
+    
+
+
+        
+
+
+"""
 String printing functions
 """
 def print_spacer(
@@ -225,7 +244,7 @@ def load_graphs(
             if verbose:
                 print(f"[{index:4d}] Constructing graph from {acc}...", end=" ")
             
-            try:
+            if True:
                 g = construct_graph(config, pdb_path=pdb_path) 
 
                 pos: int = int(res_pos)
@@ -238,6 +257,8 @@ def load_graphs(
 
                 g = get_surface_motif(g, site=res, r=radius_threshold, asa_threshold=rsa_threshold) 
 
+                avg_rsa = get_avg_rsa(g)
+
                 # Assert that phosphosite residue is same as what we expected 
                 assert aa3to1(psite_res) == res_code, f"Residue mismatch {psite_res} and {res_code}"
                 assert aa3to1(res.split(':')[1]) == res_code, f"Residue mismatch {res} and {res_code} {pos}"
@@ -249,8 +270,15 @@ def load_graphs(
                 # Assert that phosphosiste is included in the graph.  
                 # TODO: display green on the terminal output if it is included; 
                 # Display red on terminal if it is excluded (and --force was used.)
+            try:
 
-                graph = {'graph': g, 'kinase': kinase, 'psite': psite, 'res': res}
+                graph = {
+                    'graph': g, 
+                    'kinase': kinase, 
+                    'psite': psite, 
+                    'res': res, 
+                    'average_rsa': avg_rsa,
+                }
                 graphs[index] = graph
 
                 psite_contained = res in list(g.nodes())
@@ -293,7 +321,7 @@ def load_graphs(
         print(f"{stats['num_fail']} graph constructions failed")
         print("")
 
-    return graphs
+    return graphs   
 
 
 '''

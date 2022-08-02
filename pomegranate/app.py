@@ -7,7 +7,7 @@ from distutils.log import debug
 import dash
 from dash import Dash, dcc, html, Input, Output
 from tabs.seeMotif import motifVisualisationTab
-from tabs.clustering import clustering_tab
+from tabs.clustering import clustering_tab, update_graph, update_vis_1
 
 PROTEIN_ID = "default"
 

@@ -11,7 +11,7 @@ import json
 from protein.phosphosite import *
 from protein.phosphosite import get_surface_motif
 from protein.interactions import add_distance_threshold
-from visualisation.plot import motif_asteroid_plot
+from visualisation.plot import asteroid_plot_2, motif_asteroid_plot
 from json_conversion.graphein_to_json import g_to_json, load_prot_graph
 
 import os
@@ -21,9 +21,9 @@ import pandas as pd
 import plotly.express as px
 
 
-from definitions import EMBEDDINGS_PATH, STRUCTURE_HUMAN_PATH, SAVED_CLUSTER_GRAPHS_PATH
+from definitions import EMBEDDINGS_PATH, STRUCTURE_HUMAN_PATH, SAVED_CLUSTER_GRAPHS_PATH, STRUCTURE_YEAST_PATH
 from utils.amino_acid import aa1letter
-from visualisation.plot import motif_plot_distance_matrix
+from visualisation.plot import motif_plot_distance_matrix, motif_asteroid_plot
 from protein.phosphosite import get_protein_graph
 
 from graphein.protein.visualisation import plot_distance_matrix
@@ -43,12 +43,26 @@ Read in data
 """
 df = pd.read_csv(EMBEDDINGS_PATH)
 
-graphs: Dict[str, nx.Graph] = construct_graphs(
+
+
+graphs: Dict[str, nx.Graph]
+
+
+graphs = construct_graphs(
     df=df,
     pdb_dir=STRUCTURE_HUMAN_PATH,
     out_dir=SAVED_CLUSTER_GRAPHS_PATH,
+    overwrite=False,
+) 
+
+graphs = construct_graphs(
+    df=df,
+    pdb_dir=STRUCTURE_YEAST_PATH,
+    out_dir=SAVED_CLUSTER_GRAPHS_PATH,
+    overwrite=False,
 ) 
 # graphs[protein_id]
+
 
 
 
@@ -96,7 +110,7 @@ def clustering_tab():
                         ),                   
                         
                         dcc.RadioItems(id='colour-by',
-                            options=['Residue', 'Kinase', 'Average RSA', 'Cluster'],
+                            options=['Residue', 'Kinase', 'Kinase (discrete)'],
                             value='Kinase',
                             inline=True,
                             labelStyle={'display': 'inline-block', 'marginTop': '5px'},
@@ -126,9 +140,12 @@ def clustering_tab():
             style={'width': '49%', 'display': 'inline-block'}),
 
             html.Div([
+                html.Label(
+                    ['Visualisation'], style={'font-weight': 'bold', "text-align": "left"}
+                ),
                 dcc.Dropdown(
-                    df['Method'].unique(),
-                    'tSNE',
+                    ['Matrix', 'Asteroid'],
+                    'Matrix',
                     id='which-visualisation-method'
                 ),
                 
@@ -155,13 +172,21 @@ def clustering_tab():
         
 
         # Slider TODO
-        html.Div(dcc.Slider(
-            0,
-            10,
-            step=None,
-            id='slider',
-            value=10,
-        ), style={'width': '49%', 'padding': '0px 20px 20px 20px'})
+        html.Div([
+            
+            html.Label(
+                    ['Radius threshold'], style={'font-weight': 'bold', "text-align": "left"}
+                ),
+
+            dcc.Slider(
+                0,
+                10,
+                step=None,
+                id='slider',
+                value=10,
+            ), 
+            ],
+            style={'width': '40%', 'padding': '0px 20px 20px 20px'})
     ])
 
 
@@ -178,7 +203,7 @@ def update_graph(include_residues, proteome, dim_reduction_method,
                  visualisation_method, colour_by,
                  slider_value):
 
-    print("Residues:",include_residues)
+    #print("Residues:",include_residues)
 
     residues = include_residues
     # Use slider value to get subset of data
@@ -202,6 +227,19 @@ def update_graph(include_residues, proteome, dim_reduction_method,
 
     # FILTER
     dff = df[df['Set'] == proteome] 
+    
+    dff = dff[dff['Method'] == dim_reduction_method]
+
+
+    kin_to_num: Dict[str, int] = {}
+    for i, k in enumerate(dff['Kinase'].unique()):
+        kin_to_num[k] = i
+
+
+    dff['Kinase Number'] = dff.Kinase.apply(
+        lambda x: kin_to_num[x]
+    )
+
 
 
     
@@ -238,14 +276,17 @@ def update_graph(include_residues, proteome, dim_reduction_method,
 
     
     if colour_by == "Residue": colour = 'Phosphosite Residue'
+    elif colour_by == "Kinase": colour = "Kinase Number"
+    elif colour_by == "Kinase (discrete)": colour = "Kinase"
     else: colour = colour_by
 
     dff = dff[dff['Phosphosite'].apply(filt)]
     dff = dff[dff['Method'] == dim_reduction_method]
 
-    kinase_labels = dff["Kinase"].unique()
+    #kinase_labels = dff["Kinase"].unique()
 
     #print(kinase_labels)
+    #print(f"{len(kinase_labels)} kinases.")
 
     fig = px.scatter(
         #name=f"{dim_reduction_method} clustering of motifs from {proteome}",
@@ -254,12 +295,12 @@ def update_graph(include_residues, proteome, dim_reduction_method,
         y='Y',
         color=colour,
         color_continuous_scale=px.colors.sequential.Viridis,
-        color_discrete_sequence=px.colors.qualitative.Dark24,
+        color_discrete_sequence=px.colors.sequential.Jet,
 
         hover_name=dff['Protein ID'], #TODO: combine this with psite location to get name on hover.  with name of kinase. 
 
 
-        #custom_data=dff[['Protein ID', 'Phosphosite', 'Kinase']],
+        custom_data=dff[['Protein ID', 'Phosphosite', 'Kinase']],
 
     )
 
@@ -311,14 +352,15 @@ def create_time_series(dff, axis_type, title):
     Output('vis-1', 'figure'),
     Input('clustering-scatter', 'hoverData'),
     Input('which-visualisation-method', 'value'),
-    Input('visualisation-options', 'value'),
+    Input('slider', 'value'),
+    Input('clustering-which-proteome', 'value'),
 
 )
 def update_vis_1(
     hoverData,
-    vis_method,
-    vis_options, 
-
+    vis_method, 
+    radius,
+    proteome,
 ):
 
     # Load graph
@@ -327,35 +369,63 @@ def update_vis_1(
 
     # TODO: present kinase name and psite location on hover_over
 
-
-
     data = hoverData['points'][0]['customdata']
-
     print(f"data: {data}")
 
+    name        = data[0]
+    phosphosite = data[1]
+    kinase      = data[2]
 
-
-
-    name = data[0]
     if name is None or name == "DEFAULT": 
         fig = {}
         return fig
 
     protein_id = name.split('@')[0].strip()
 
-
-    try: 
-        g = graphs[protein_id]
-    except:
-        pdb_path = os.path.join(STRUCTURE_HUMAN_PATH, f"{protein_id}.pdb")
-        print(f"Constructing graph from {pdb_path}...")
-        g = get_protein_graph(config="rsa", pdb_path=pdb_path)
+    database = "AF2"
+    prot_name = f"{protein_id}_{phosphosite}"
     
-    try: 
-        psite = data[1]
-    except:
-        psite = None
+    filename = f"{prot_name}_{database}.json"
+    prot_save_path = os.path.join(SAVED_CLUSTER_GRAPHS_PATH, filename)
 
+    # Check if exists 
+    if not os.path.isfile(prot_save_path): return {}
+
+    
+    print(f"loading from {prot_save_path} ...")
+    with open(prot_save_path, 'r') as f:
+        data = json.load(f)
+    
+    print(type(data))
+    g: nx.Graph = load_prot_graph(data)
+
+    
+
+
+    
+    
+    if True:
+        if vis_method == 'Matrix':
+            g = get_protein_subgraph_radius(g=g, site=phosphosite, r=radius)
+            fig = motif_plot_distance_matrix(g=g, psite=phosphosite, aa_order="hydro", show_residue_labels=True)
+        elif vis_method == 'Asteroid':
+            print('Asteroid plot.')
+            k = min(1, math.floor(radius/4))
+            fig = motif_asteroid_plot(
+                g=g,
+                
+                node_id=phosphosite,
+                size_nodes_by="rsa",
+                node_size_multiplier=80,
+                colour_nodes_by="hydrophobicity",
+                #width=435,
+                #height=400,
+                k=k,
+            )
+    try:
+        pass
+    except:
+        fig = {}
     #if psite: fig = motif_plot_distance_matrix(g=g, psite=psite, aa_order="hydro", show_residue_labels=False)
     #else: fig = plot_distance_matrix(g)
     # Subgraph 
@@ -366,6 +436,5 @@ def update_vis_1(
     # Get figure
     #fig = motif_plot_distance_matrix(g=g, psite=psite)
 
-    
-    
+
     return fig

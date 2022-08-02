@@ -7,8 +7,19 @@ STRUCTURE_PATH = os.path.join(ROOT_DIR, 'structures')
 
 SAVED_GRAPHS_DIR = os.path.join(ROOT_DIR, "graphs")
 
+SAVED_CLUSTER_GRAPHS_PATH = os.path.join(ROOT_DIR, "clustering_saved_graphs")
+
 STRUCTURE_HUMAN_PATH = os.path.join(STRUCTURE_PATH, 'human')
+STRUCTURE_YEAST_PATH = os.path.join(STRUCTURE_PATH, 'yeast')
+
+
 
 EMBEDDINGS_FILENAME = "embeddings_output.csv" #'embeddings.csv'
+n = 60
+n = 61
+EMBEDDINGS_FILENAME = f"EM_gcn_E{n}.csv"
+EMBEDDINGS_FILENAME = f"ALL_CURRENT.csv"
 EMBEDDINGS_PATH = os.path.join(os.path.join(ROOT_DIR, 'embeddings'), EMBEDDINGS_FILENAME)
+
+
 

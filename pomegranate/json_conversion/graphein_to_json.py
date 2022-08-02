@@ -1,4 +1,3 @@
-import graphein.protein as gp
 import networkx.readwrite as nx
 import pandas as pd
 import numpy as np

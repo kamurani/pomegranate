@@ -1,17 +1,8 @@
 from dash import Dash, dcc, html, callback, Input, Output
 
-from protein.phosphosite import get_adjacency_matrix_plot, get_phosphosites, get_protein_graph, get_surface_motif
-
+from json_conversion.graphein_to_json import load_prot_graph
+from protein.phosphosite import get_phosphosites, get_surface_motif
 from visualisation.plot import multiple_motif_plot_distance_matrix
-
-# Get data 
-# --------
-#### HARDCODED PROTEIN FOR NOW; TODO: USE INPUT TO ASSIGN PROTEIN ####
-prot_id = "4hhb" # PDB file.  Try using with extract_surface_subgraph. 
-
-USE_ALPHAFOLD = False
-g = get_protein_graph(prot_id, use_alphafold=USE_ALPHAFOLD, config="asa")
-psites = get_phosphosites(g)
 
 
 # Copied from seeMotif ... is there a better way to hold this info? #
@@ -35,15 +26,18 @@ def get_marks():
     
     return marks
 
-'''
-ASA Slider component
-'''
-DEFAULT_ASA_THRESHOLD = 0.5
+@callback(
+    Output('psites-to-compare', 'options'),
+    Output('psites-to-compare', 'value'),
+    Input('intermediate-value-prot', 'children'),
+    )
+def update_offered_psites(graph):
 
-keys = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
-vals = [dict(label=f"{k} ASA") for k in keys]
-ASA_THRESHOLD_SLIDER_MARKS = dict(zip(keys, vals))
-#####################################################################
+    g = load_prot_graph(graph)
+    psites = get_phosphosites(g)
+
+    return psites, [psites[0]]
+
 
 '''
 Adjacency matrix plot
@@ -51,24 +45,27 @@ Adjacency matrix plot
 @callback(
     Output('adj-matrices', 'figure'),
     Input('radius-threshold-slider', 'value'),
-    Input('asa-threshold-slider', 'value'),
     Input('axis-order-dropdown', 'value'),
+    Input ('intermediate-value-prot', 'children'),
+    Input('psites-to-compare', 'value'),
     Input('colour-dropdown', 'value')
-    )
-    
-def update_graph(radius, asa_threshold, axis_order, colour):
+    )  
+def update_graph(radius, axis_order, graph, psites, colour):
     
     # Get new subgraph
-    g1 = g.copy()
+    g = load_prot_graph(graph)
+    
     # Get phosphosite
     # TODO get phosphosite info. Probably want to select this before comparing?
-    psite = get_phosphosites(g1)[0]
-    
-    s_g = get_surface_motif(g1, site=psite, r=radius, asa_threshold=asa_threshold)
+    graphs_to_plot = []
+    print(f'Psites: {psites}; length: {len(psites)}')
+    for psite in psites:
+        print(f'Psite: ${psite}$')
+        s_g = get_surface_motif(g.copy(), site=psite, r=radius, asa_threshold=0.5)
+        graphs_to_plot.append((s_g, psite))
+
     # update figure 
-    name = g.graph["name"]
-    title = name.upper() + f""" STRUCTURAL MOTIF @ {psite}"""
-    figure = multiple_motif_plot_distance_matrix(to_plot=[(s_g, psite), (s_g, psite), (s_g, psite), (s_g, psite)], colour=colour)
+    figure = multiple_motif_plot_distance_matrix(to_plot=graphs_to_plot, colour=colour)
       
     return figure
 
@@ -84,12 +81,6 @@ def compareBySideTab ():
                     marks=get_marks(),
                     included=True, # show trail
                     id='radius-threshold-slider'
-            ),
-            dcc.Slider(0.0, 1.0,
-                    value=DEFAULT_ASA_THRESHOLD,
-                    marks=ASA_THRESHOLD_SLIDER_MARKS,
-                    included=True, # show trail
-                    id='asa-threshold-slider'
             ),
             html.Div(children=[
                 html.H4('Order matrix by ', style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0'}),
@@ -109,7 +100,17 @@ def compareBySideTab ():
                     style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0', 'width':'200px'}
                 )],
                 style={'height':'30px'}
-            )
+            ),
+            html.Br(),
+            html.Br(),
+            html.Div(children=[
+                html.H3('Phosphosites to compare: ', style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0'}),
+                dcc.Dropdown(
+                    id='psites-to-compare',
+                    multi=True,
+                    style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0'}
+                )
+            ])
         ]),
         dcc.Graph(id='adj-matrices', className='tab-component')
     ])

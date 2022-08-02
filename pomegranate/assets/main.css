@@ -47,3 +47,8 @@
 .graph-display { grid-area: 1 / 4 / 4 / 6; }
 .options { grid-area: 4 / 4 / 6 / 6; }
 .sliders { grid-area: 6 / 1 / 7 / 6; }
+
+/* MULTI MOTIF VIEW TAB */
+.side-by-side-tab-content {
+    /*width: 100%;*/
+}

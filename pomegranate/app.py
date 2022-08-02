@@ -8,6 +8,8 @@ import dash
 from dash import Dash, dcc, html, Input, Output
 from tabs.seeMotif import motifVisualisationTab
 from tabs.clustering import clustering_tab, update_graph, update_vis_1
+#from tabs.sideBySide import compareBySideTab
+from tabs.multipleCompare import compareBySideTab
 
 PROTEIN_ID = "default"
 
@@ -71,7 +73,7 @@ content = html.Div(
 
 base_page = html.Div([
     html.Img(src=app.get_asset_url('imgs/POMEGRANATE-LOGO.png'), style={'width': '40%'}),
-    html.H2('PhOsphosite Motif Explorer -- GRAph Network Abstraction Through Embeddings'),
+    html.H2('PhOsphosite Motif Explorer -- GRAph Network Abstraction Through Embeddings', style={'color': '#C2BEBE'}),
     html.Div(id="content-grid", children=[sidebar,content])
     
 ])
@@ -89,18 +91,7 @@ def render_content(tab):
     if tab == 'single-motif-view':
         return motifVisualisationTab()
     elif tab == 'multi-motif-view':
-        return html.Div([
-            html.H3('Placeholder graph'),
-            dcc.Graph(
-                figure={
-                    'data': [{
-                        'x': [1, 2, 3],
-                        'y': [3, 1, 2],
-                        'type': 'bar'
-                    }]
-                }
-            )
-        ])
+        return compareBySideTab()
     elif tab == 'clustering':
         return clustering_tab()
     elif tab == 'documentation':

@@ -7,6 +7,7 @@ import logging
 from itertools import count
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
+import math
 import plotly
 import matplotlib
 import matplotlib.pyplot as plt
@@ -34,6 +35,7 @@ from protein.residue_properties import HYDROPHOBICITY_SCALES
 # added imports
 from graphein.utils.utils import protein_letters_3to1_all_caps as aa3to1
 
+from plotly.subplots import make_subplots
 
 '''
 Modified from graphein.protein.visualisation by Cam M
@@ -46,6 +48,7 @@ def motif_plot_distance_matrix(
     reverse_order: bool = False,
     title: Optional[str] = None,
     show_residue_labels: bool = True,
+    colour: Optional[str] = 'viridis_r'
 ) -> go.Figure:
     """Plots a distance matrix of the graph.
 
@@ -100,7 +103,7 @@ def motif_plot_distance_matrix(
             labels=dict(color="Distance"),
             title=title,
             template="plotly_dark",
-            color_continuous_scale="viridis_r",
+            color_continuous_scale=colour,
             
         )
     else:
@@ -109,12 +112,102 @@ def motif_plot_distance_matrix(
         else:
             tick_labels = []
         fig = sns.heatmap(
-            dist_mat, xticklabels=tick_labels, yticklabels=tick_labels
+            dist_mat, xticklabels=tick_labels, yticklabels=tick_labels, cmap=colour
         ).set(title=title)
 
     return fig
 
+def multiple_motif_plot_distance_matrix(
+    to_plot: list(Tuple[nx.Graph, str], Tuple[nx.Graph, str]),
+    use_plotly: bool = True,
+    aa_order: Optional[str] = "hydro",
+    reverse_order: bool = False,
+    show_residue_labels: bool = True,
+    colour: Optional[str] = 'viridis_r'
+) -> go.Figure:
+    """Plots a distance matrix of the graph.
 
+    :param g: NetworkX graph containing a distance matrix as a graph attribute (``g.graph['dist_mat']``).
+    :type g: nx.Graph, optional
+    :param psite: Location of the phosphorylation site.
+    :type psite: Union[int, str]
+    :param dist_mat: Distance matrix to plot. If not provided, the distance matrix is taken from the graph. Defaults to ``None``.
+    :type dist_mat: np.ndarray, optional
+    :param use_plotly: Whether to use ``plotly`` or ``seaborn`` for plotting. Defaults to ``True``.
+    :type use_plotly: bool
+    :param title: Title of the plot.Defaults to ``None``.
+    :type title: str, optional
+    :param aa_order: Method used to order residues on the axes.  Defaults to ``sequence`` order.
+    :type aa_order: str, optional 
+    :param reverse_order: Reverse the ordering of residues on the axes.  Defaults to ``False``.
+    :show_residue_labels: Whether to show residue labels on the plot. Defaults to ``True``.
+    :type show_residue_labels: bool
+    :raises: ValueError if neither a graph ``g`` or a ``dist_mat`` are provided.
+    :return: Plotly figure.
+    :rtype: px.Figure
+    """
+    if to_plot is None:
+        raise ValueError("Must provide a list of graph/psite pairs to plot.")
+
+    dist_mats = []
+    x_ranges = []
+    y_ranges = []
+    titles = []
+    for g, psite in to_plot:
+        # Get the distance matrix from the graph
+        dist_mat = ordered_distmat(g, aa_order)
+        x_range = list(dist_mat.index)
+        y_range = list(dist_mat.columns)
+
+        # add phospho label to selected site
+        for i in range(len(x_range)):
+            s = x_range[i]
+            if psite == s:
+                break
+        x_range[i] = f"{x_range[i]} [P]"
+        y_range[i] = f"[P] {y_range[i]}"
+
+        # Add this info to list
+        dist_mats.append(dist_mat)
+        x_ranges.append(x_range)
+        y_ranges.append(y_range)
+        titles.append(f'{g.graph["name"]} at site {psite}')
+
+    num_plots = len(to_plot)
+
+    # Assuming number is even?
+    num_cols = 2
+    num_rows = math.ceil(num_plots / 2)
+    # Initialize figure with subplots
+    fig = make_subplots(
+            rows=num_rows,
+            cols=num_cols,
+            subplot_titles=titles,
+            vertical_spacing=0.1,
+        )
+
+    cur_col = 1
+    cur_row = 1
+    for i in range(0, num_plots):
+        
+        # add next plot
+        fig.add_trace(go.Heatmap(z=dist_mats[i],
+                    coloraxis='coloraxis',
+                    x=x_ranges[i],
+                    y=y_ranges[i]),
+                    row = cur_row, 
+                    col = cur_col)
+        
+        # increment rows/columns
+        if cur_col == 2:
+            cur_row += 1
+            cur_col = 1
+        else:
+            cur_col += 1
+
+    fig.update_layout(coloraxis = dict(colorscale=colour), height=500*num_rows)
+    
+    return fig
 
 # TODO: modify which attributes we use in node's label
 '''
@@ -994,10 +1087,6 @@ def ordered_distmat(g: nx.graph, order: str) -> pd.DataFrame:
     eucl_dists.columns = pdb_df.node_id
 
     cur_order = list(g.nodes)
-    # TODO: seems to be issue where g.nodes isn't consistent with g.graph['pdb_df'].
-    # TODO: need to work out why/where one is being modified and not the other.
-    print (f'Length of pdb_df: {len(pdb_df)}')
-    print (f'Length of g.nodes: {len(cur_order)}')
 
     if order == 'seq':
         # No changes required

@@ -135,12 +135,12 @@ def get_marks():
     return marks
 
 '''
-ASA Slider component
+RSA Slider component
 '''
 DEFAULT_ASA_THRESHOLD = 0.5
 
 keys = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
-vals = [dict(label=f"{k} ASA") for k in keys]
+vals = [dict(label=f"{k} RSA") for k in keys]
 ASA_THRESHOLD_SLIDER_MARKS = dict(zip(keys, vals))
 
 

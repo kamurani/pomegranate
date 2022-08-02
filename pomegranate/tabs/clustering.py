@@ -159,8 +159,9 @@ def clustering_tab():
             dcc.Graph(
                 id='clustering-scatter',
                 hoverData={'points': [{'customdata': 'DEFAULT', 'psite': 'DEFAULT'}]} # TODO
-            )
-        ], style={'width': '49%', 'display': 'inline-block', 'padding': '0 20'}),
+            )],
+            style={'width': '49%', 'display': 'inline-block', 'padding': '0 20'}
+        ),
 
         
         # Visualisation plots
@@ -184,7 +185,7 @@ def clustering_tab():
                 step=None,
                 id='slider',
                 value=10,
-            ), 
+            ),
             ],
             style={'width': '40%', 'padding': '0px 20px 20px 20px'})
     ])

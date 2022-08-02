@@ -3,9 +3,13 @@ body {
 }
 
 H2 {
-    color: rgb(195, 184, 185);
+    color: #b52d37;
 }
 
 H3 {
-    color: #b52d37
+    color: #9C272F;
+}
+
+H4 {
+    color: #393838;
 }

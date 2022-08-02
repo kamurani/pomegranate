@@ -168,5 +168,12 @@ Hierarchical, k-means, etc.
 
 ## Screenshots
 ![Pomegranate_search](https://user-images.githubusercontent.com/107228475/182361267-168e6e14-9a6f-48ef-bf90-179163aef763.png)
+(From left --> right & up --> down) Tab selection, Protein searchbars, Adjacency matrix, Radius & RSA sliders, Asteroid plot, Phosphorylation site selection, Matrix order dropdown, 
+
+
 ![Pomegranate_compare](https://user-images.githubusercontent.com/107228475/182361352-54386466-af22-455f-ad79-c1014678d049.png)
+(From left --> right & up --> down) Tab selection, Protein searchbars, Radius slider, Matrix Order dropdown, Grayscale dropdown, Phosphosite selection bar, Adjacency matrices
+
+
 ![Pomegranate_help](https://user-images.githubusercontent.com/107228475/182361387-4f6724d5-1c71-4bfe-b70c-98c3b51d176c.png)
+Help Page

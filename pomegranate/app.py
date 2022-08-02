@@ -5,8 +5,13 @@
 
 from distutils.log import debug
 import dash
-from dash import Dash, dcc, html, Input, Output
+from dash import Dash, dcc, html, Input, Output, State
 from tabs.seeMotif import motifVisualisationTab
+from help_tab import help_text
+
+import dash_loading_spinners as dls
+
+import time
 #from tabs.sideBySide import compareBySideTab
 from tabs.multipleCompare import compareBySideTab
 
@@ -70,14 +75,51 @@ content = html.Div(
     ]
 )
 
-base_page = html.Div([
-    html.Img(src=app.get_asset_url('imgs/POMEGRANATE-LOGO.png'), style={'width': '40%'}),
-    html.H2('PhOsphosite Motif Explorer -- GRAph Network Abstraction Through Embeddings', style={'color': '#C2BEBE'}),
-    html.Div(id="content-grid", children=[sidebar,content])
-    
-])
+base_page = html.Div(
+    children=[
+        html.Div(
+            id="div-loading",
+            children=[
+                dls.Pacman(
+                    fullscreen=True, 
+                    id="loading-whole-app"
+                )
+            ]
+        ),
+        html.Div(
+            className="div-app",
+            id="div-app",
+            children = [ html.Div([
+                    html.Img(src=app.get_asset_url('imgs/POMEGRANATE-LOGO.png'), style={'width': '40%'}),
+                    html.H2('PhOsphosite Motif Explorer -- GRAph Network Abstraction Through Embeddings'),
+                    html.Div(id="content-grid", children=[sidebar,content]),
+                ])
+        ]
+        )
+    ]
+)
 
 app.layout = base_page
+
+@app.callback(
+    Output("div-loading", "children"),
+    [
+        Input("div-app", "loading_state")
+    ],
+    [
+        State("div-loading", "children"),
+    ]
+)
+def hide_loading_after_startup(
+    loading_state, 
+    children
+    ):
+    if children:
+        print("remove loading spinner!")
+        return None
+    print("spinner already gone!")
+    raise PreventUpdate
+
 
 app.validation_layout = html.Div([
     base_page,
@@ -88,13 +130,14 @@ app.validation_layout = html.Div([
               Input('tab-options', 'value'))
 def render_content(tab):
     if tab == 'single-motif-view':
+        time.sleep(2);
         return motifVisualisationTab()
     elif tab == 'multi-motif-view':
         return compareBySideTab()
     elif tab == 'clustering':
         return html.H3('Look how cool our clusters are')
     elif tab == 'documentation':
-        return html.H3('Documentation')
+        return help_text()
 
 
 

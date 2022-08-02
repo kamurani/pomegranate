@@ -365,7 +365,7 @@ def main(
         csv_path = os.path.join(savepath, filename)
         print(f"Saving CSV to {csv_path}")
     
-    elif os.path.isfile():
+    elif os.path.isfile(savepath):
         csv_path = savepath
         print(f"Saving CSV to {csv_path}")
     else:
@@ -474,7 +474,8 @@ def main(
             #print(f"Dist: {dist}")
             return dist 
 
-        num_samples = 800
+        NUM_SAMPLES = 800
+        num_samples = min(NUM_SAMPLES, len(graphs))
         graph_idx = np.random.RandomState(42).randint(len(graphs), size=(num_samples, 2))
 
         targets = [graph_distance(graphs[left], graphs[right]) for left, right in graph_idx]
@@ -557,7 +558,7 @@ def main(
                         'Protein ID'    : gd['name'],
                         'Phosphosite'   : gd['res'], 
                         'Kinase'        : gd['kinase'], 
-                        'Average RSA'   : gd['average_rsa'],
+                        #'Average RSA'   : gd['average_rsa'],
                         'Set'           : protein_set, 
                         'Method'        : dim_method, 
                         'X'             : two_d[i, 0], 
@@ -573,7 +574,7 @@ def main(
                         'Protein ID'    : gd['name'],
                         'Phosphosite'   : gd['res'], 
                         'Kinase'        : gd['kinase'], 
-                        'Average RSA'   : gd['average_rsa'],
+                        #'Average RSA'   : gd['average_rsa'],
                         'Set'           : protein_set, 
                         'Method'        : dim_method, 
                         'X'             : proj_2d[i, 0], 

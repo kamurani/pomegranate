@@ -86,7 +86,6 @@ def get_protein_graph(id=None, config=None, database='PDB'):
     # NOTE: File paths use '\' in windows systems
     # NOTE: Need different prot_dir for each DB
     protein_path = SAVED_PDB_DIR + id + '.pdb'
-
     if database in ['AlphaFold', 'SWISS_PROT']:
         #NOTE: Might have to remove SWISS_PROT. Not all SP have AF structures
         print("AF or SP")
@@ -96,7 +95,6 @@ def get_protein_graph(id=None, config=None, database='PDB'):
         #protein_path = STRUCTURE_PATH + id + '.pdb'
         print("After")
 
-    print(protein_path)
     # if use_alphafold:
     #     pdb_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
    
@@ -116,17 +114,19 @@ def get_protein_graph(id=None, config=None, database='PDB'):
         # Graph doesn't exist
         if os.path.isfile(protein_path):
             print(f"Using local file for {id}.")
-            print(protein_path)
-            g = construct_graph(config=config, pdb_path=protein_path)
-            #g = construct_graph(pdb_path=protein_path)
+            #g = construct_graph(config=config, pdb_path=protein_path)
+            if database == 'PDB':
+                g = construct_graph(config=config, pdb_path=protein_path)
+            else:
+                g = construct_graph(pdb_path=protein_path)
         else:
             print(f"Retrieving {id}...")
             if database == 'PDB':
+                #g = construct_graph(config=config, pdb_code=id)
                 g = construct_graph(config=config, pdb_code=id)
-                #g = construct_graph(pdb_code=id)
             else: # NOTE: FIX THIS. BAD STYLE. Same line as 119
-                g = construct_graph(config=config, pdb_path=protein_path)
-                #g = construct_graph(pdb_path=protein_path)
+                #g = construct_graph(config=config, pdb_path=protein_path)
+                g = construct_graph(pdb_path=protein_path)
 
     # TODO: check if file exists and download if not. 
    

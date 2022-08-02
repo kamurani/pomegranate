@@ -9,6 +9,7 @@ Usage: python cluster_graphs.py [OPTIONS] GRAPHS
 import collections
 import inspect
 import csv
+from multiprocessing.sharedctypes import Value
 import pickle
 import re
 import time
@@ -363,6 +364,12 @@ def main(
         filename = f"EM_{train_name}_E{epochs}.csv"
         csv_path = os.path.join(savepath, filename)
         print(f"Saving CSV to {csv_path}")
+    
+    elif os.path.isfile():
+        csv_path = savepath
+        print(f"Saving CSV to {csv_path}")
+    else:
+        raise ValueError(f"Nonexistent file / director {savepath}")
 
     print(f"Input file is {in_path}.")
 
@@ -533,6 +540,7 @@ def main(
             
             if verbose: print(f"Saving to {csv_path}...")
 
+
             with open(csv_path, 'w', newline='') as f:
                 
                 dim_method = "tSNE"
@@ -549,6 +557,7 @@ def main(
                         'Protein ID'    : gd['name'],
                         'Phosphosite'   : gd['res'], 
                         'Kinase'        : gd['kinase'], 
+                        'Average RSA'   : gd['average_rsa'],
                         'Set'           : protein_set, 
                         'Method'        : dim_method, 
                         'X'             : two_d[i, 0], 
@@ -558,10 +567,13 @@ def main(
 
                 dim_method = 'UMAP'
                 for i, gd in enumerate(graph_dicts):
+
+                    
                     row = {
                         'Protein ID'    : gd['name'],
                         'Phosphosite'   : gd['res'], 
                         'Kinase'        : gd['kinase'], 
+                        'Average RSA'   : gd['average_rsa'],
                         'Set'           : protein_set, 
                         'Method'        : dim_method, 
                         'X'             : proj_2d[i, 0], 

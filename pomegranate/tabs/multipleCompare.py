@@ -108,9 +108,11 @@ def compareBySideTab ():
                     multi=True,
                     style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0'}
                 )
-            ])
+            ], className='select-multi-psites')
         ]),
         html.Div(className='tab-component', children=[
+            html.Br(),
+            html.Br(),
             dcc.Graph(id='adj-matrices')
         ])       
     ])

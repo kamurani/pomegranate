@@ -7,17 +7,23 @@ import logging
 from itertools import count
 from typing import Dict, List, Optional, Tuple, Union
 
+import math
+import plotly
 import matplotlib
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import seaborn as sns
 from mpl_toolkits.mplot3d import Axes3D
+from scipy.spatial.distance import pdist, squareform
+import re
 
 from graphein.protein.subgraphs import extract_k_hop_subgraph
 from graphein.utils.utils import import_message
+import graphein.protein.edges.distance as g_dist
 
 # imports from visualisation.py
 from graphein.protein.visualisation import colour_nodes, colour_edges
@@ -26,18 +32,20 @@ from graphein.protein.visualisation import colour_nodes, colour_edges
 # added imports
 from graphein.utils.utils import protein_letters_3to1_all_caps as aa3to1
 
+from plotly.subplots import make_subplots
+
 '''
 Modified from graphein.protein.visualisation by Cam M
 '''
 def motif_plot_distance_matrix(
     g: Optional[nx.Graph],
     psite: Union[int, str],
-    dist_mat: Optional[np.ndarray] = None,
     use_plotly: bool = True,
     aa_order: Optional[str] = "hydro",
     reverse_order: bool = False,
     title: Optional[str] = None,
     show_residue_labels: bool = True,
+    colour: Optional[str] = 'viridis_r'
 ) -> go.Figure:
     """Plots a distance matrix of the graph.
 
@@ -60,77 +68,29 @@ def motif_plot_distance_matrix(
     :return: Plotly figure.
     :rtype: px.Figure
     """
-    if g is None and dist_mat is None:
-        raise ValueError("Must provide either a graph or a distance matrix.")
+    if g is None:
+        raise ValueError("Must provide a graph as input.")
 
-    if dist_mat is None:
-        dist_mat = g.graph["distmat"] 
-        
-        
-    # Phospho site 
-    if isinstance(psite, str):
-        try:
-            psite = int(psite.split(':')[-1])
-        except ValueError:
-            raise ValueError("Specified phospho site isn't in correct format.")  
-            
-    # TODO Check if graph is original (i.e. size of dist_mat == size of graph)
-    def get_indexes(node_list):
-        indexes = []
-        for n in node_list:
-            indexes.append(int(n.split(":")[2]) - 1)    # indexing from 0
-        return indexes  
-        
-        # TODO 
-        # sort indexes in - distance order, - seq position order           
-    	
-    if g is not None:    
- 
-        x_range = list(g.nodes)
-        
-        # Sort nodes by ordering
+    # Get distance matrix
+    dist_mat = ordered_distmat(g, aa_order)      
+    
+    # Get labels
+    x_range = list(dist_mat.index)
+    y_range = list(dist_mat.columns)
+    
+    # add phospho label to selected site
+    for i in range(len(x_range)):
+        s = x_range[i]
+        if psite == s:
+            break
+    
+    x_range[i] = f"{x_range[i]} [P]"
+    y_range[i] = f"[P] {y_range[i]}"
+    
+    # Default title
+    if not title:
+        title = g.graph["name"] + " - Distance Matrix"
 
-        # TODO: store sorting function inside a dict so can be used like a case-switch thing
-        if aa_order == 'seq':
-            x_range = sorted(x_range, key=lambda x: int(x.split(':')[-1]))
-        elif aa_order == 'euclidean':
-            # sort ascending distance
-            pass
-        elif aa_order == 'hydro':
-            # hydrophobicity ascending
-            ordering = "IVLFCMAWGTSYPHNDQEKR"
-            x_range = sorted(x_range, key=lambda res: [ordering.index(a) for a in aa3to1(res.split(':')[1])]) 
-
-        else: 
-            raise ValueError(f"'{aa_order}' isn't a valid axis ordering.")
-         
-        
-        # sequence order (ascending)
-
-
-        
-        y_range = x_range.copy()
-        
-        # TODO sort by distance
-        
-        # add phospho label to selected site
-        for i in range(len(x_range)):
-            s = x_range[i]
-            if psite == int(s.split(':')[-1]):
-                break
-        
-        x_range[i] = f"{x_range[i]} [P]"
-        y_range[i] = f"[P] {y_range[i]}"
-        
-        
-        
-        if not title:
-            title = g.graph["name"] + " - Distance Matrix"
-    else:
-        x_range = list(range(dist_mat.shape[0]))
-        y_range = list(range(dist_mat.shape[1]))
-        if not title:
-            title = "Distance matrix"
 
     if use_plotly:
         fig = px.imshow(
@@ -140,7 +100,7 @@ def motif_plot_distance_matrix(
             labels=dict(color="Distance"),
             title=title,
             template="plotly_dark",
-            color_continuous_scale="viridis_r",
+            color_continuous_scale=colour,
             
         )
     else:
@@ -149,14 +109,104 @@ def motif_plot_distance_matrix(
         else:
             tick_labels = []
         fig = sns.heatmap(
-            dist_mat, xticklabels=tick_labels, yticklabels=tick_labels
+            dist_mat, xticklabels=tick_labels, yticklabels=tick_labels, cmap=colour
         ).set(title=title)
 
     return fig
 
+def multiple_motif_plot_distance_matrix(
+    to_plot: list(Tuple[nx.Graph, str], Tuple[nx.Graph, str]),
+    use_plotly: bool = True,
+    aa_order: Optional[str] = "hydro",
+    reverse_order: bool = False,
+    show_residue_labels: bool = True,
+    colour: Optional[str] = 'viridis_r'
+) -> go.Figure:
+    """Plots a distance matrix of the graph.
 
+    :param g: NetworkX graph containing a distance matrix as a graph attribute (``g.graph['dist_mat']``).
+    :type g: nx.Graph, optional
+    :param psite: Location of the phosphorylation site.
+    :type psite: Union[int, str]
+    :param dist_mat: Distance matrix to plot. If not provided, the distance matrix is taken from the graph. Defaults to ``None``.
+    :type dist_mat: np.ndarray, optional
+    :param use_plotly: Whether to use ``plotly`` or ``seaborn`` for plotting. Defaults to ``True``.
+    :type use_plotly: bool
+    :param title: Title of the plot.Defaults to ``None``.
+    :type title: str, optional
+    :param aa_order: Method used to order residues on the axes.  Defaults to ``sequence`` order.
+    :type aa_order: str, optional 
+    :param reverse_order: Reverse the ordering of residues on the axes.  Defaults to ``False``.
+    :show_residue_labels: Whether to show residue labels on the plot. Defaults to ``True``.
+    :type show_residue_labels: bool
+    :raises: ValueError if neither a graph ``g`` or a ``dist_mat`` are provided.
+    :return: Plotly figure.
+    :rtype: px.Figure
+    """
+    if to_plot is None:
+        raise ValueError("Must provide a list of graph/psite pairs to plot.")
 
+    dist_mats = []
+    x_ranges = []
+    y_ranges = []
+    titles = []
+    for g, psite in to_plot:
+        # Get the distance matrix from the graph
+        dist_mat = ordered_distmat(g, aa_order)
+        x_range = list(dist_mat.index)
+        y_range = list(dist_mat.columns)
 
+        # add phospho label to selected site
+        for i in range(len(x_range)):
+            s = x_range[i]
+            if psite == s:
+                break
+        x_range[i] = f"{x_range[i]} [P]"
+        y_range[i] = f"[P] {y_range[i]}"
+
+        # Add this info to list
+        dist_mats.append(dist_mat)
+        x_ranges.append(x_range)
+        y_ranges.append(y_range)
+        titles.append(f'{g.graph["name"]} at site {psite}')
+
+    num_plots = len(to_plot)
+
+    # Assuming number is even?
+    num_cols = 2
+    num_rows = math.ceil(num_plots / 2)
+    # Initialize figure with subplots
+    fig = make_subplots(
+            rows=num_rows,
+            cols=num_cols,
+            subplot_titles=titles,
+            vertical_spacing=0.1,
+        )
+
+    cur_col = 1
+    cur_row = 1
+    for i in range(0, num_plots):
+        
+        # add next plot
+        fig.add_trace(go.Heatmap(z=dist_mats[i],
+                    coloraxis='coloraxis',
+                    x=x_ranges[i],
+                    y=y_ranges[i]),
+                    row = cur_row, 
+                    col = cur_col)
+        
+        # increment rows/columns
+        if cur_col == 2:
+            cur_row += 1
+            cur_col = 1
+        else:
+            cur_col += 1
+
+    fig.update_layout(coloraxis = dict(colorscale=colour), height=500*num_rows)
+    
+    return fig
+
+# TODO: modify which attributes we use in node's label
 '''
 Modified from graphein.protein.visualisation
 '''
@@ -167,6 +217,7 @@ def motif_plot_plotly_protein_structure_graph(
     node_alpha: float = 0.7,
     node_size_min: float = 20.0,
     node_size_multiplier: float = 20.0,
+    node_size_feature: str = "degree",
     label_node_ids: bool = True,
     node_colour_map=plt.cm.plasma,
     edge_color_map=plt.cm.plasma,
@@ -188,6 +239,8 @@ def motif_plot_plotly_protein_structure_graph(
     :type node_size_min: float
     :param node_size_multiplier: Scales node size by a constant. Node sizes reflect degree. Defaults to ``20.0``.
     :type node_size_multiplier: float
+    :param node_size_feature: What feature to use to scale the node size by. Defaults to ``degree``.
+    :type node_size_feature: str
     :param label_node_ids: bool indicating whether or not to plot ``node_id`` labels. Defaults to ``True``.
     :type label_node_ids: bool
     :param node_colour_map: colour map to use for nodes. Defaults to ``plt.cm.plasma``.
@@ -213,6 +266,22 @@ def motif_plot_plotly_protein_structure_graph(
         G, colour_map=edge_color_map, colour_by=colour_edges_by
     )
 
+    # Get node size 
+    def node_scale_by(G, feature):
+        if feature == 'degree':
+            return lambda k : node_size_min + node_size_multiplier * G.degree[k]
+        elif feature == 'rsa':
+            return lambda k : node_size_min + node_size_multiplier * G.nodes(data=True)[k]['rsa']
+        # Meiler embedding dimension
+        p = re.compile("meiler-([1-7])")
+        dim = p.search(feature).group(1)
+        if dim:
+            return lambda k : node_size_min + node_size_multiplier * max(0, G.nodes(data=True)[k]['meiler'][f'dim_{dim}']) # Meiler values may be negative
+        else:
+            raise ValueError(f"Cannot size nodes by feature '{feature}'")   
+
+    get_node_size = node_scale_by(G, node_size_feature) 
+
     # 3D network plot
     x_nodes = []
     y_nodes = []
@@ -225,7 +294,7 @@ def motif_plot_plotly_protein_structure_graph(
         x_nodes.append(value[0])
         y_nodes.append(value[1])
         z_nodes.append(value[2])
-        node_sizes.append(node_size_min + node_size_multiplier * G.degree[key])
+        node_sizes.append(get_node_size(key))
 
         if label_node_ids:
             node_labels.append(list(G.nodes())[i])
@@ -401,12 +470,13 @@ def motif_plot_protein_structure_graph(
         )
 
         # Get node scaling function
-        def node_scale_size(G, feature):
+        def node_scale_by(G, feature):
             if feature == 'degree':
                 return lambda k : node_size_min + node_size_multiplier * G.degree[k]
             elif feature in ['rsa', 'asa']:
                 return lambda k : node_size_min + node_size_multiplier * G.nodes(data=True)[k]
-            
+        
+        node_scale_size = node_scale_by(G, node_size_feature)
         
         # Loop on the pos dictionary to extract the x,y,z coordinates of each node
         for i, (key, value) in enumerate(pos.items()):
@@ -449,4 +519,326 @@ def motif_plot_protein_structure_graph(
         plt.close("all")
 
     return ax
+
+
+
+"""
+Modified from graphein.protein.visualisation by Cam M
+"""
+
+def motif_asteroid_plot(
+    g: nx.Graph,
+    node_id: str,
+    k: int = 2,
+    colour_nodes_by: str = "shell",  # residue_name, hydrophobicity
+    size_nodes_by: str = "degree",   # RSA 
+    colour_edges_by: str = "kind",
+    edge_colour_map: plt.cm.Colormap = plt.cm.plasma,
+    edge_alpha: float = 1.0,
+    show_labels: bool = True,
+    title: Optional[str] = None,
+    width: int = 600,
+    height: int = 500,
+    use_plotly: bool = True,
+    show_edges: bool = False,
+    show_legend: bool = True,
+    node_size_min: float = 20,
+    node_size_multiplier: float = 10,
+) -> Union[plotly.graph_objects.Figure, matplotlib.figure.Figure]:
+    """Plots a k-hop subgraph around a node as concentric shells.
+
+    Radius of each point is proportional to a node attribute, with degree as default. (modified by node_size_multiplier).
+
+    :param g: NetworkX graph to plot.
+    :type g: nx.Graph
+    :param node_id: Node to centre the plot around.
+    :type node_id: str
+    :param k: Number of hops to plot. Defaults to ``2``.
+    :type k: int
+    :param colour_nodes_by: Colour the nodes by this attribute. 
+    :type colour_nodes_by: str
+
+
+    
+    :param size_nodes_by: Size the nodes by this attribute.  
+    :type size_nodes_by: str
+
+    :param colour_edges_by: Colour the edges by this attribute. Currently only ``"kind"`` is supported.
+    :type colour_edges_by: str
+    :param edge_colour_map: Colour map for edges. Defaults to ``plt.cm.plasma``.
+    :type edge_colour_map: plt.cm.Colormap
+    :param edge_alpha: Sets a given alpha value between 0.0 and 1.0 for all the edge colours.
+    :type edge_alpha: float
+    :param title: Title of the plot. Defaults to ``None``.
+    :type title: str
+    :param width: Width of the plot. Defaults to ``600``.
+    :type width: int
+    :param height: Height of the plot. Defaults to ``500``.
+    :type height: int
+    :param use_plotly: Use plotly to render the graph. Defaults to ``True``.
+    :type use_plotly: bool
+    :param show_edges: Whether to show edges in the plot. Defaults to ``False``.
+    :type show_edges: bool
+    :param show_legend: Whether to show the legend of the edges. Fefaults to `True``.
+    :type show_legend: bool
+    :param node_size_min: Specifies node minimum size. Defaults to ``20.0``.
+    :type node_size_min: float
+    :param node_size_multiplier: Multiplier for the size of the nodes. Defaults to ``10``.
+    :type node_size_multiplier: float.
+    :returns: Plotly figure or matplotlib figure.
+    :rtpye: Union[plotly.graph_objects.Figure, matplotlib.figure.Figure]
+    """
+    assert node_id in g.nodes(), f"Node {node_id} not in graph"
+
+    nodes: Dict[int, List[str]] = {0: [node_id]}
+    node_list: List[str] = [node_id]
+
+    # Iterate over the number of hops and extract nodes in each shell
+    for i in range(1, k+1):
+        subgraph = extract_k_hop_subgraph(g, node_id, k=i)
+        candidate_nodes = subgraph.nodes()
+        # Check we've not already found nodes in the previous shells
+        nodes[i] = [n for n in candidate_nodes if n not in node_list]
+        node_list += candidate_nodes
+    shells = [nodes[i] for i in range(k+1)]
+
+
+    #log.debug(f"Plotting shells: {shells}")
+
+    if use_plotly:
+        # Get shell layout and set as node attributes.
+        pos = nx.shell_layout(subgraph, shells)
+        nx.set_node_attributes(subgraph, pos, "pos")
+
+        if show_edges:
+            edge_colors = colour_edges(
+                subgraph,
+                colour_map=edge_colour_map,
+                colour_by=colour_edges_by,
+                set_alpha=edge_alpha,
+                return_as_rgba=True,
+            )
+            show_legend_bools = [
+                (True if x not in edge_colors[:i] else False)
+                for i, x in enumerate(edge_colors)
+            ]
+            edge_trace = []
+            for i, (u, v) in enumerate(subgraph.edges()):
+                x0, y0 = subgraph.nodes[u]["pos"]
+                x1, y1 = subgraph.nodes[v]["pos"]
+                bond_kind = " / ".join(list(subgraph[u][v]["kind"]))
+                tr = go.Scatter(
+                    x=(x0, x1),
+                    y=(y0, y1),
+                    mode="lines",
+                    line=dict(width=1, color=edge_colors[i]),
+                    hoverinfo="text",
+                    text=[bond_kind],
+                    name=bond_kind,
+                    legendgroup=bond_kind,
+                    showlegend=show_legend_bools[i],
+                )
+                edge_trace.append(tr)
+
+        node_x: List[str] = []
+        node_y: List[str] = []
+        for node in subgraph.nodes():
+            x, y = subgraph.nodes[node]["pos"]
+            node_x.append(x)
+            node_y.append(y)
+
+
+        
+        
+        def node_size_function(g: nx.Graph, feature: str):
+            if feature == 'degree':
+                return lambda k : g.degree(k)
+            elif feature == 'rsa':
+                return lambda k : g.nodes(data=True)[k]['rsa']
+            else:
+                raise NotImplementedError(
+                    f"Size by {size_nodes_by} not implemented."
+                )
+
+        node_size = node_size_function(subgraph, size_nodes_by)
+
+        node_sizes = [
+            node_size_min + node_size(n) * node_size_multiplier for n in subgraph.nodes()
+        ]
+
+        
+        if size_nodes_by == "degree":
+            node_sizes = [
+                node_size_min + subgraph.degree(n) * node_size_multiplier for n in subgraph.nodes()
+            ]
+        elif size_nodes_by == "rsa":
+            # TODO: check that graph actually has rsa attribute
+            print("Sizing nodes by rsa...")
+            node_sizes = [
+                subgraph.nodes(data=True)[n]['rsa'] * node_size_multiplier for n in subgraph.nodes()
+            ]
+            
+        else:
+            raise NotImplementedError(
+                f"Size by {size_nodes_by} not implemented."
+            )
+        
+
+        if colour_nodes_by == "shell":
+            node_colours = []
+            for n in subgraph.nodes():
+                for k, v in nodes.items():
+                    if n in v:
+                        node_colours.append(k)
+                        print(f"k: {k}")
+
+        # IMPLEMENTED BY ME:
+        elif colour_nodes_by == "hydrophobicity":
+            node_colours = []
+            for n in subgraph.nodes():
+                for k, v in nodes.items():
+                    if n in v:
+                        print(f"n: {n}")
+                        node_colours.append(aa2hydrophobicity(n.split(':')[1]))
+        
+        # TODO
+        elif colour_nodes_by == "residue_name":
+            node_colours = []
+            for n in subgraph.nodes():
+                pass
+        else:
+            raise NotImplementedError(
+                f"Colour by {colour_nodes_by} not implemented."
+            )
+            # TODO colour by AA type
+        node_trace = go.Scatter(
+            x=node_x,
+            y=node_y,
+            text=list(subgraph.nodes()),
+            mode="markers+text" if show_labels else "markers",
+            hoverinfo="text",
+            textposition="bottom center",
+            showlegend=False,
+            marker=dict(
+                colorscale="viridis",
+                reversescale=True,
+                color=node_colours,
+                size=node_sizes, 
+                colorbar=dict(
+                    thickness=15,
+                    title=str.capitalize(colour_nodes_by),
+                    tickvals=list(range(k)),
+                    xanchor="left",
+                    titleside="right",
+                ),
+                line_width=2,
+            ),
+        )
+
+        data = edge_trace + [node_trace] if show_edges else [node_trace]
+        fig = go.Figure(
+            data=data,
+            layout=go.Layout(
+                title=title if title else f'Asteroid Plot - {g.graph["name"]}',
+                width=width,
+                height=height,
+                titlefont_size=16,
+                legend=dict(yanchor="top", y=1, xanchor="left", x=1.10),
+                showlegend=True if show_legend else False,
+                hovermode="closest",
+                margin=dict(b=20, l=5, r=5, t=40),
+                xaxis=dict(
+                    showgrid=False, zeroline=False, showticklabels=False
+                ),
+                yaxis=dict(
+                    showgrid=False, zeroline=False, showticklabels=False
+                ),
+            ),
+        )
+        return fig
+    else:
+        nx.draw_shell(subgraph, nlist=shells, with_labels=show_labels)
+
+
+'''
+Distance matrix in other orders
+Modified from graphein.protein.edges.distance by Naomi Warren
+'''
+def ordered_distmat(g: nx.graph, order: str) -> pd.DataFrame:
+    """
+    Compute pairwise Euclidean distances between every atom, ordering the matrix
+    by 'order'.
+    :raises: ValueError if ``g.graph['pdb_df']`` does not contain the required columns.
+    :return: pd.Dataframe of Euclidean distance matrix.
+    :rtype: pd.DataFrame
+    """
+
+    pdb_df = g.graph['pdb_df']
+
+    # Check df has the correct columns (not sure why it wouldn't? but ...)
+    if (
+        not pd.Series(["x_coord", "y_coord", "z_coord"])
+        .isin(pdb_df.columns)
+        .all()
+    ):
+        raise ValueError(
+            "Dataframe must contain columns ['x_coord', 'y_coord', 'z_coord']"
+        )
+
+    # Get the distances as a square matrix
+    eucl_dists = pdist(
+        pdb_df[["x_coord", "y_coord", "z_coord"]], metric="euclidean"
+    )
+    eucl_dists = pd.DataFrame(squareform(eucl_dists))
+
+    # Re-order the rows in the appropriate order
+    eucl_dists.index = pdb_df.node_id
+    eucl_dists.columns = pdb_df.node_id
+
+    cur_order = list(g.nodes)
+
+    if order == 'seq':
+        # No changes required
+        return eucl_dists
+    elif order == 'hydro':
+        # Get the order from low to high hydrophobicity
+        ordering = "IVLFCMAWGTSYPHNDQEKR"
+        hydro_sorted = sorted(cur_order, key=lambda res: [ordering.index(a) for a in aa3to1(res.split(':')[1])])
+        # Re-index (i.e. switch rows and columns) in this order
+        eucl_dists = eucl_dists.reindex(hydro_sorted)
+        eucl_dists = eucl_dists.reindex(columns=hydro_sorted)
+
+    return eucl_dists
+
+"""
+Get hydrophobicity map
+"""
+def aa2hydrophobicity(
+    aa: str,
+    mapping : str = 'a',
+    ):
+    if mapping == 'a':
+        hmap = { 
+            "ILE" : 4.5,
+            "VAL" : 4.2,
+            "LEU" : 3.8,
+            "PHE" : 2.8,
+            "CYS" : 2.5,
+            "MET" : 1.9,
+            "ALA" : 1.8,
+            "GLY" : -0.4,
+            "THR" : -0.7,
+            "SER" : -0.8,
+            "TRP" : -0.9,
+            "TYR" : -1.3,
+            "PRO" : -1.6,
+            "HIS" : -3.2,
+            "GLU" : -3.5,
+            "GLN" : -3.5,
+            "ASP" : -3.5,
+            "ASN" : -3.5,
+            "LYS" : -3.9,
+            "ARG" : -4.5,
+        }
+    return hmap[aa]
 

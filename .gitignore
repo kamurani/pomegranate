@@ -1,6 +1,7 @@
 ### POMEGRANATE ###
 structures/
-
+saved_graphs/
+graphs/
 
 
 # Byte-compiled / optimized / DLL files
@@ -134,4 +135,4 @@ dmypy.json
 .pyre/
 
 # Mac
-*.DS_Store
+.DS_Store

@@ -52,3 +52,9 @@
 .side-by-side-tab-content {
     /*width: 100%;*/
 }
+
+.select-multi-psites .Select--multi .Select-value {
+    background-color: #e6bbbd;
+    border-color: #d6a0a4;
+    color: #9C272F;
+  }

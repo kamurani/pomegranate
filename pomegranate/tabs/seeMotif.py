@@ -1,4 +1,3 @@
-
 from dash import Dash, dcc, html, callback, Input, Output, dependencies
 import plotly.express as px
 import pandas as pd
@@ -203,3 +202,4 @@ Debugging to show input
 )
 def showInput(db, prot_id):
     return u'DB: {} ID: {}'.format(db, prot_id)
+

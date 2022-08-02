@@ -3,6 +3,8 @@ structures/
 saved_graphs/
 graphs/
 
+clustering_saved_graphs/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -45,7 +45,7 @@ Adjacency matrix plot
 @callback(
     Output('adj-matrices', 'figure'),
     Input('radius-threshold-slider', 'value'),
-    Input('axis-order-dropdown', 'value'),
+    Input('axis-order-dropdown-cf', 'value'),
     Input ('intermediate-value-prot', 'children'),
     Input('psites-to-compare', 'value'),
     Input('colour-dropdown', 'value')
@@ -58,9 +58,7 @@ def update_graph(radius, axis_order, graph, psites, colour):
     # Get phosphosite
     # TODO get phosphosite info. Probably want to select this before comparing?
     graphs_to_plot = []
-    print(f'Psites: {psites}; length: {len(psites)}')
     for psite in psites:
-        print(f'Psite: ${psite}$')
         s_g = get_surface_motif(g.copy(), site=psite, r=radius, asa_threshold=0.5)
         graphs_to_plot.append((s_g, psite))
 
@@ -85,7 +83,7 @@ def compareBySideTab ():
             html.Div(children=[
                 html.H4('Order matrix by ', style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0'}),
                 dcc.Dropdown(
-                    id='axis-order-dropdown',
+                    id='axis-order-dropdown-cf',
                     options=[{'label':"Sequence position", 'value': "seq"}, 
                         {'label':"Hydrophobicity", 'value':"hydro"}],
                     value="hydro",
@@ -112,5 +110,7 @@ def compareBySideTab ():
                 )
             ])
         ]),
-        dcc.Graph(id='adj-matrices', className='tab-component')
+        html.Div(className='tab-component', children=[
+            dcc.Graph(id='adj-matrices')
+        ])       
     ])

@@ -151,49 +151,59 @@ def multiple_motif_plot_distance_matrix(
     y_ranges = []
     titles = []
     for g, psite in to_plot:
-        dist_mats.append(g.graph["distmat"] )
-        x_ranges.append(list(g.nodes))
-        y_ranges.append(list(g.nodes))
+        # Get the distance matrix from the graph
+        dist_mat = ordered_distmat(g, aa_order)
+        x_range = list(dist_mat.index)
+        y_range = list(dist_mat.columns)
 
+        # add phospho label to selected site
+        for i in range(len(x_range)):
+            s = x_range[i]
+            if psite == s:
+                break
+        x_range[i] = f"{x_range[i]} [P]"
+        y_range[i] = f"[P] {y_range[i]}"
+
+        # Add this info to list
+        dist_mats.append(dist_mat)
+        x_ranges.append(x_range)
+        y_ranges.append(y_range)
         titles.append(f'{g.graph["name"]} at site {psite}')
-
-        # Sort nodes by ordering??????
-        # add phospho label to selected site??????
 
     num_plots = len(to_plot)
 
     # Assuming number is even?
-    if use_plotly:
-        num_cols = 2
-        num_rows = math.ceil(num_plots / 2)
-        # Initialize figure with subplots
-        fig = make_subplots(
-                rows=num_rows,
-                cols=num_cols,
-                subplot_titles=titles,
-                vertical_spacing=0.1,
-            )
+    num_cols = 2
+    num_rows = math.ceil(num_plots / 2)
+    # Initialize figure with subplots
+    fig = make_subplots(
+            rows=num_rows,
+            cols=num_cols,
+            subplot_titles=titles,
+            vertical_spacing=0.1,
+        )
 
-        cur_col = 1
-        cur_row = 1
-        for i in range(0, num_plots):
-            
-            # add next plot
-            fig.add_trace(go.Heatmap(z=dist_mats[i],
-                        coloraxis='coloraxis',
-                        x=x_ranges[i],
-                        y=y_ranges[i]),
-                        row = cur_row, 
-                        col = cur_col)
-            
-            # increment rows/columns
-            if cur_col == 2:
-                cur_row += 1
-                cur_col = 1
-            else:
-                cur_col += 1
+    cur_col = 1
+    cur_row = 1
+    for i in range(0, num_plots):
+        
+        # add next plot
+        fig.add_trace(go.Heatmap(z=dist_mats[i],
+                    coloraxis='coloraxis',
+                    x=x_ranges[i],
+                    y=y_ranges[i]),
+                    row = cur_row, 
+                    col = cur_col)
+        
+        # increment rows/columns
+        if cur_col == 2:
+            cur_row += 1
+            cur_col = 1
+        else:
+            cur_col += 1
 
-        fig.update_layout(coloraxis = dict(colorscale=colour), height=250*num_plots)
+    fig.update_layout(coloraxis = dict(colorscale=colour), height=500*num_rows)
+    
     return fig
 
 # TODO: modify which attributes we use in node's label
@@ -786,10 +796,6 @@ def ordered_distmat(g: nx.graph, order: str) -> pd.DataFrame:
     eucl_dists.columns = pdb_df.node_id
 
     cur_order = list(g.nodes)
-    # TODO: seems to be issue where g.nodes isn't consistent with g.graph['pdb_df'].
-    # TODO: need to work out why/where one is being modified and not the other.
-    print (f'Length of pdb_df: {len(pdb_df)}')
-    print (f'Length of g.nodes: {len(cur_order)}')
 
     if order == 'seq':
         # No changes required

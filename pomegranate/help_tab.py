@@ -16,27 +16,6 @@ allows you to do many things including:
 
 *(Add more info at each sprint)* 
 
-***
-
-## Contents:
-
-1. [Input](#input)
-+ 1.1 [Protein](###-1.1-protein)
-+ 1.2 [Phosphosite](-1.2-phosphosite)
-+ 1.3 [Radius of Interest](-1.2-phosphosite)
-2. [Viewing Structural Motifs](##-2.-Viewing-Structural-Motifs)
-+ 2.1 [Simple Graph](###-2.1-Simple-Graph)
-+ 2.2 [Adjacency Matrix](##-1.-Input)
-+ 2.3 [3D Interactive View](##-1.-Input)
-3. [Comparing Structural Motifs](##-3.-Comparing-Structural-Motifs)
-+ 3.1 [Two Motifs](##-1.-Input)
-+ 3.2 [Three or More Motifs](##-1.-Input)
-4. [Page Elements](##-1.-Input)
-+ 4.1 [Side Panel](##-1.-Input)
-+ 4.2 [Different Tabs](##-1.-Input)
-5. [Saving](##-1.-Input)
-
-
 
 ***
 
@@ -184,3 +163,27 @@ Saving your history as well?
 
 > Latest update: Middle of Sprint 2 - 19/7/2022
 ''')
+
+
+
+
+'''
+## Contents:
+
+1. [Input](<h2>1. Input</h2>)
++ 1.1 [Protein](###-1.1-protein)
++ 1.2 [Phosphosite](-1.2-phosphosite)
++ 1.3 [Radius of Interest](-1.2-phosphosite)
+2. [Viewing Structural Motifs](##-2.-Viewing-Structural-Motifs)
++ 2.1 [Simple Graph](###-2.1-Simple-Graph)
++ 2.2 [Adjacency Matrix](##-1.-Input)
++ 2.3 [3D Interactive View](##-1.-Input)
+3. [Comparing Structural Motifs](##-3.-Comparing-Structural-Motifs)
++ 3.1 [Two Motifs](##-1.-Input)
++ 3.2 [Three or More Motifs](##-1.-Input)
+4. [Page Elements](##-1.-Input)
++ 4.1 [Side Panel](##-1.-Input)
++ 4.2 [Different Tabs](##-1.-Input)
+5. [Saving](##-1.-Input)
+
+'''

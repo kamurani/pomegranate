@@ -116,15 +116,18 @@ Options:
 #### Learn protein representations 
 
 ```
-$ pomegranate learn --help
-Usage: pomegranate learn [OPTIONS] GRAPHS
+Usage: cluster_graphs.py [OPTIONS] GRAPHS SAVEPATH
 
 Options:
-  -e, --epochs INTEGER      Number of epochs to train for.  [default: 200]
-  -b, --batch-size INTEGER  Batch size to be used by data generator.
-                            [default: 16]
+  --train-method [graph|node]  Method to use for training the graph neural
+                               network.  [default: graph]
+  -e, --epochs INTEGER         Number of epochs to train for.  [default: 50]
+  -b, --batch-size INTEGER     Batch size to be used by data generator.
+                               [default: 16]
+  -N, --num-graphs INTEGER
   -v, --verbose
-  --help                    Show this message and exit.
+  --write-csv, --csv
+  --help                       Show this message and exit.
 ```
 
 TODO: have multiple models to use for clustering with different training methods associated with each. 

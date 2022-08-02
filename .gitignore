@@ -1,6 +1,7 @@
 ### POMEGRANATE ###
 structures/
-
+saved_graphs/
+graphs/
 
 
 # Byte-compiled / optimized / DLL files
@@ -133,5 +134,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Macbook stuff
-*.DS_Store
+# Mac
+.DS_Store

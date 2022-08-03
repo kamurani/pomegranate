@@ -50,8 +50,19 @@
 
 /* MULTI MOTIF VIEW TAB */
 .side-by-side-tab-content {
-    /*width: 100%;*/
+    padding: 10px;
 }
+
+.options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 2fr);
+    grid-template-rows: repeat(3, 0.5fr);
+    gap: 10px 10px;
+}
+
+.select-multi-psites { grid-area: 1 / 1 / 2 / 4; }
+.cf-customising { grid-area: 2 / 1 / 3 / 4; }
+.cf-radius-slider { grid-area: 3 / 1 / 4 / 4; }
 
 .select-multi-psites .Select--multi .Select-value {
     background-color: #e6bbbd;

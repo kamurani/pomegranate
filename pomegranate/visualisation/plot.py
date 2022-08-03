@@ -209,6 +209,63 @@ def multiple_motif_plot_distance_matrix(
     
     return fig
 
+def multi_asteroid_plot(
+    to_plot: list(Tuple[nx.Graph, str], Tuple[nx.Graph, str]),
+    k: int = 2,
+    colour: Optional[str] = 'viridis_r'
+) -> go.Figure:
+    if to_plot is None:
+        raise ValueError("Must provide a list of graph/psite pairs to plot.")
+
+    plots = []
+    titles = []
+    for g, psite in to_plot:
+        a_plot = motif_asteroid_plot(
+                    g=g,
+                    node_id=psite,
+                    size_nodes_by="rsa",
+                    node_size_multiplier=80,
+                    colour_nodes_by="hydrophobicity",
+                    width=435,
+                    height=400,
+                    k=k
+                )
+        plots.append(a_plot)
+        titles.append(f'{g.graph["name"]} at site {psite}')
+
+    num_plots = len(to_plot)
+
+    # Assuming number is even?
+    num_cols = 2
+    num_rows = math.ceil(num_plots / 2)
+    # Initialize figure with subplots
+    fig = make_subplots(
+            rows=num_rows,
+            cols=num_cols,
+            subplot_titles=titles,
+            vertical_spacing=0.1,
+        )
+
+    cur_col = 1
+    cur_row = 1
+    for i in range(0, num_plots):
+        
+        # add next plot
+        fig.add_trace(plots[i].data,
+                    row = cur_row, 
+                    col = cur_col)
+        
+        # increment rows/columns
+        if cur_col == 2:
+            cur_row += 1
+            cur_col = 1
+        else:
+            cur_col += 1
+
+    fig.update_layout(coloraxis = dict(colorscale=colour), height=500*num_rows)
+    
+    return fig
+
 # TODO: modify which attributes we use in node's label
 '''
 Modified from graphein.protein.visualisation

@@ -41,7 +41,7 @@ def motifVisualisationTab ():
             ),
             html.Br(),
             html.Div(children=[
-                html.H4('Order matrix by ', style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0'}),
+                html.H5('Order matrix by ', style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0'}),
                 dcc.Dropdown(
                     id='axis-order-dropdown',
                     options=[{'label':"Sequence position", 'value': "seq"}, 
@@ -53,7 +53,7 @@ def motifVisualisationTab ():
             ),
             html.Br(),
             html.Div(children=[
-                html.H4('Grayscale? ', style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0'}),
+                html.H5('Grayscale? ', style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0'}),
                 dcc.Dropdown(
                     id='colour-dropdown',
                     options=[{'label':"No", 'value': "viridis_r"}, 

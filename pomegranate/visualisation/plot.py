@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from itertools import count
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import math
 import plotly
@@ -27,6 +27,9 @@ import graphein.protein.edges.distance as g_dist
 
 # imports from visualisation.py
 from graphein.protein.visualisation import colour_nodes, colour_edges
+
+
+from protein.residue_properties import HYDROPHOBICITY_SCALES
 
 
 # added imports
@@ -526,6 +529,286 @@ def motif_plot_protein_structure_graph(
 Modified from graphein.protein.visualisation by Cam M
 """
 
+def _node_feature_func(
+    g: nx.Graph, 
+    feature: str, 
+    focal_node: Optional[str] = None,
+    focal_point: Optional[tuple] = None,
+    no_negatives: bool = False,
+) -> Callable:
+    """
+    Maps a feature as described by a string to a function that can be applied on nodes from a graph. 
+
+    :param g: Protein graph.
+    :type g: nx.Graph
+    :param feature: Name of feature to extract.
+    :type feature: str
+    :param focal_node: A specific node within ``g`` to use in feature calculation; e.g. when calculating ``distance`` to a given site. 
+    :type focal_node: Optional[str]
+    :param focal_point: Use specific coordinates instead of a node within the graph. 
+    :type focal_point: tuple
+    :param no_negatives: Take the max of ``0`` and the feature's value. Defaults to ``False``.
+    :type no_negatives: bool
+
+    :return: Function that returns a value for a given node ID.
+    :rtype: Callable
+
+    TODO is there a way to wrap a lambda with another function i.e. max(0, f) for `no_negatives` ?
+    TODO some features do not require the graph to be supplied e.g. hydrophobicity mapping from residue 3-letter code.  Handle this?
+    """
+    if feature == "degree": 
+        return lambda k: g.degree[k]
+
+    if feature in ["seq-position", "seq_position"]:
+        return lambda k: int(k.split(':')[-1])
+
+    elif feature == "rsa":
+        return lambda k: g.nodes(data=True)[k]["rsa"]
+
+    elif feature in ["bfac", "bfactor", "b_factor", "b-factor"]:
+        return lambda k: g.nodes(data=True)[k]["b_factor"]
+
+    elif feature == "distance": # Euclidean distance to a specific node / coordinate 
+        def get_coords(g: nx.Graph, node: str) -> np.ndarray:
+                return np.array(g.nodes()[node]["coords"])
+
+        if focal_node:
+            assert focal_node in g.nodes()
+            return lambda k: np.linalg.norm(get_coords(g, k) - get_coords(g, focal_node))
+        elif focal_point:
+            assert len(focal_point) == 3
+            return lambda k: np.linalg.norm(get_coords(g, k) - np.array(focal_point))
+        else: 
+            raise ValueError(f"Node feature 'distance' requires one of `focal_node` or `focal_point`.")
+
+    # Meiler embedding dimension
+    p = re.compile("meiler-?([0-9])")
+    match = p.search(feature)
+    if match:
+        dim = match.group(1)
+        if int(dim) in range(1,8):
+            if no_negatives:    return lambda k: max(0, g.nodes(data=True)[k]["meiler"][f"dim_{dim}"])
+            else:               return lambda k:        g.nodes(data=True)[k]["meiler"][f"dim_{dim}"]
+        else:
+            raise ValueError(f"Meiler embeddings have dimensions 1-7, received {dim}.")
+    
+    # Hydrophobicity
+    p = re.compile("([a-z]{2})?-?(hydrophobicity)")   # e.g.  "kd-hydrophobicity", "tthydrophobicity", "hydrophobicity"
+    match = p.search(feature)
+    if match and match.group(2):
+
+        # TODO: check if nodes actually have 'hydrophobicity' already; if they do, then use this.  if not, then map to kd.
+        scale: str = match.group(1) if match.group(1) else "kd" # use 'kdhydrophobicity' as default if no scale specified
+        try: hydrophob: Dict[str, float] = HYDROPHOBICITY_SCALES[scale]
+        except: raise KeyError(f"'{scale}' not a valid hydrophobicity scale.")
+        return lambda k: hydrophob[k.split(':')[1]]
+
+    else:
+        raise NotImplementedError(f"Feature '{feature}' not implemented.")
+
+def _node_size_func(
+    g: nx.Graph, 
+    feature: str, 
+    min: float, 
+    multiplier: float
+) -> Callable:
+    """
+    Returns a function that can be use to generate node sizes for plotting.
+
+    :param g: Protein graph 
+    :type g: nx.Graph
+    :param feature: Name of feature to scale node sizes by. 
+    :type feature: str
+    :param min: Number to offset size with. 
+    :type min: float
+    :param multiplier: Number to scale feature values by.
+    :type multiplier: float
+    """
+    get_feature = _node_feature_func(g=g, feature=feature, no_negatives=True)
+    return lambda k: min + multiplier * get_feature(k)
+
+def asteroid_plot_2(
+    g: nx.Graph,
+    node_id: str,
+    k: int = 2,
+    colour_nodes_by: str = "shell",  # residue_name
+    size_nodes_by: str = "degree",
+    colour_edges_by: str = "kind",
+    edge_colour_map: plt.cm.Colormap = plt.cm.plasma,
+    edge_alpha: float = 1.0,
+    show_labels: bool = True,
+    title: Optional[str] = None,
+    width: int = 600,
+    height: int = 500,
+    use_plotly: bool = True,
+    show_edges: bool = False,
+    show_legend: bool = True,
+    node_size_min: float = 20,
+    node_size_multiplier: float = 10,
+) -> Union[plotly.graph_objects.Figure, matplotlib.figure.Figure]:
+    """Plots a k-hop subgraph around a node as concentric shells.
+
+    Radius of each point is proportional to the degree of the node (modified by node_size_multiplier).
+
+    :param g: NetworkX graph to plot.
+    :type g: nx.Graph
+    :param node_id: Node to centre the plot around.
+    :type node_id: str
+    :param k: Number of hops to plot. Defaults to ``2``.
+    :type k: int
+    :param colour_nodes_by: Colour the nodes by this attribute. Currently only ``"shell"`` is supported.
+    :type colour_nodes_by: str
+    :param size_nodes_by: Size the nodes by an attribute. 
+    :type size_nodes_by: str
+    :param colour_edges_by: Colour the edges by this attribute. Currently only ``"kind"`` is supported.
+    :type colour_edges_by: str
+    :param edge_colour_map: Colour map for edges. Defaults to ``plt.cm.plasma``.
+    :type edge_colour_map: plt.cm.Colormap
+    :param edge_alpha: Sets a given alpha value between 0.0 and 1.0 for all the edge colours.
+    :type edge_alpha: float
+    :param title: Title of the plot. Defaults to ``None``.
+    :type title: str
+    :param width: Width of the plot. Defaults to ``600``.
+    :type width: int
+    :param height: Height of the plot. Defaults to ``500``.
+    :type height: int
+    :param use_plotly: Use plotly to render the graph. Defaults to ``True``.
+    :type use_plotly: bool
+    :param show_edges: Whether to show edges in the plot. Defaults to ``False``.
+    :type show_edges: bool
+    :param show_legend: Whether to show the legend of the edges. Fefaults to `True``.
+    :type show_legend: bool
+    :param node_size_min: Specifies node minimum size. Defaults to ``20.0``.
+    :type node_size_min: float
+    :param node_size_multiplier: Multiplier for the size of the nodes. Defaults to ``10``.
+    :type node_size_multiplier: float
+    :returns: Plotly figure or matplotlib figure.
+    :rtpye: Union[plotly.graph_objects.Figure, matplotlib.figure.Figure]
+    """
+    assert node_id in g.nodes(), f"Node {node_id} not in graph"
+
+    nodes: Dict[int, List[str]] = {0: [node_id]}
+    node_list: List[str] = [node_id]
+    # Iterate over the number of hops and extract nodes in each shell
+    for i in range(1, k):
+        subgraph = extract_k_hop_subgraph(g, node_id, k=i)
+        candidate_nodes = subgraph.nodes()
+        # Check we've not already found nodes in the previous shells
+        nodes[i] = [n for n in candidate_nodes if n not in node_list]
+        node_list += candidate_nodes
+    shells = [nodes[i] for i in range(k)]
+    #log.debug(f"Plotting shells: {shells}")
+
+    if use_plotly:
+        # Get shell layout and set as node attributes.
+        pos = nx.shell_layout(subgraph, shells)
+        nx.set_node_attributes(subgraph, pos, "pos")
+
+        if show_edges:
+            edge_colors = colour_edges(
+                subgraph,
+                colour_map=edge_colour_map,
+                colour_by=colour_edges_by,
+                set_alpha=edge_alpha,
+                return_as_rgba=True,
+            )
+            show_legend_bools = [
+                (True if x not in edge_colors[:i] else False)
+                for i, x in enumerate(edge_colors)
+            ]
+            edge_trace = []
+            for i, (u, v) in enumerate(subgraph.edges()):
+                x0, y0 = subgraph.nodes[u]["pos"]
+                x1, y1 = subgraph.nodes[v]["pos"]
+                bond_kind = " / ".join(list(subgraph[u][v]["kind"]))
+                tr = go.Scatter(
+                    x=(x0, x1),
+                    y=(y0, y1),
+                    mode="lines",
+                    line=dict(width=1, color=edge_colors[i]),
+                    hoverinfo="text",
+                    text=[bond_kind],
+                    name=bond_kind,
+                    legendgroup=bond_kind,
+                    showlegend=show_legend_bools[i],
+                )
+                edge_trace.append(tr)
+
+        node_x: List[str] = []
+        node_y: List[str] = []
+        for node in subgraph.nodes():
+            x, y = subgraph.nodes[node]["pos"]
+            node_x.append(x)
+            node_y.append(y)
+   
+        size_by = _node_size_func(subgraph, size_nodes_by, min=node_size_min, multiplier=node_size_multiplier)
+        node_sizes = [size_by(n) for n in subgraph.nodes()]
+
+        colour_nodes_by = colour_nodes_by.lower()
+        node_colours = []
+        if colour_nodes_by == "shell":
+            for n in subgraph.nodes():
+                for k, v in nodes.items():
+                    if n in v:
+                        node_colours.append(k)
+        else:
+            try: get_feature = _node_feature_func(g=subgraph, feature=colour_nodes_by, no_negatives=False)
+            except: raise NotImplementedError(f"Colour by {colour_nodes_by} not implemented.")
+            
+            for n, d in subgraph.nodes(data=True):
+                node_colours.append(get_feature(n))
+                print(f"value: {get_feature(n)}")
+
+        node_trace = go.Scatter(
+            x=node_x,
+            y=node_y,
+            text=list(subgraph.nodes()),
+            mode="markers+text" if show_labels else "markers",
+            hoverinfo="text",
+            textposition="bottom center",
+            showlegend=False,
+            marker=dict(
+                colorscale="viridis",
+                reversescale=True,
+                color=node_colours,
+                size=node_sizes,
+                colorbar=dict(
+                    thickness=15,
+                    title=str.capitalize(colour_nodes_by),
+                    tickvals=list(range(k)),
+                    xanchor="left",
+                    titleside="right",
+                ),
+                line_width=2,
+            ),
+        )
+
+        data = edge_trace + [node_trace] if show_edges else [node_trace]
+        fig = go.Figure(
+            data=data,
+            layout=go.Layout(
+                title=title if title else f'Asteroid Plot - {g.graph["name"]}',
+                width=width,
+                height=height,
+                titlefont_size=16,
+                legend=dict(yanchor="top", y=1, xanchor="left", x=1.10),
+                showlegend=True if show_legend else False,
+                hovermode="closest",
+                margin=dict(b=20, l=5, r=5, t=40),
+                xaxis=dict(
+                    showgrid=False, zeroline=False, showticklabels=False
+                ),
+                yaxis=dict(
+                    showgrid=False, zeroline=False, showticklabels=False
+                ),
+            ),
+        )
+        return fig
+    else:
+        nx.draw_shell(subgraph, nlist=shells, with_labels=show_labels)
+
+
+
 def motif_asteroid_plot(
     g: nx.Graph,
     node_id: str,
@@ -666,7 +949,7 @@ def motif_asteroid_plot(
             node_size_min + node_size(n) * node_size_multiplier for n in subgraph.nodes()
         ]
 
-        
+        """
         if size_nodes_by == "degree":
             node_sizes = [
                 node_size_min + subgraph.degree(n) * node_size_multiplier for n in subgraph.nodes()
@@ -683,7 +966,7 @@ def motif_asteroid_plot(
                 f"Size by {size_nodes_by} not implemented."
             )
         
-
+        """
         if colour_nodes_by == "shell":
             node_colours = []
             for n in subgraph.nodes():
@@ -699,7 +982,7 @@ def motif_asteroid_plot(
                 for k, v in nodes.items():
                     if n in v:
                         print(f"n: {n}")
-                        node_colours.append(aa2hydrophobicity(n.split(':')[1]))
+                        node_colours.append(5+aa2hydrophobicity(n.split(':')[1]))
         
         # TODO
         elif colour_nodes_by == "residue_name":
@@ -712,6 +995,10 @@ def motif_asteroid_plot(
             )
             # TODO colour by AA type
         node_trace = go.Scatter(
+            
+            #showscale=True,
+            
+
             x=node_x,
             y=node_y,
             text=list(subgraph.nodes()),
@@ -723,6 +1010,10 @@ def motif_asteroid_plot(
                 colorscale="viridis",
                 reversescale=True,
                 color=node_colours,
+
+                cmin=0, 
+                cmax=5,
+                
                 size=node_sizes, 
                 colorbar=dict(
                     thickness=15,

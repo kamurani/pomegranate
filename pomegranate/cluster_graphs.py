@@ -9,6 +9,7 @@ Usage: python cluster_graphs.py [OPTIONS] GRAPHS
 import collections
 import inspect
 import csv
+from multiprocessing.sharedctypes import Value
 import pickle
 import re
 import time
@@ -266,6 +267,9 @@ def test_labels_list(graphs: List, labels: List):
 @c.argument(
     'graphs', nargs=1,
 )
+@c.argument(
+    'savepath', nargs=1
+)
 @c.option(
     "--train-method",
     type=c.Choice(['graph', 'node'], case_sensitive=False),
@@ -311,6 +315,7 @@ def test_labels_list(graphs: List, labels: List):
 #@c.argument('graphs', nargs=1)
 def main(
     graphs,
+    savepath,
     train_method,
     epochs,
     batch_size,
@@ -325,8 +330,13 @@ def main(
 
     graph_path = Path(graphs)
 
-    if train_method == "graph": train_method = "gcn-graph-classification"
-    elif train_method == "node": train_method = "node-classification"
+    
+    if train_method == "graph": 
+        train_method = "gcn-graph-classification"
+        train_name = "gcn"
+    elif train_method == "node": 
+        train_method = "node-classification"
+        train_name = "gcn-node"
 
     
     # TODO: autodetect which file to use as infile, if directory is given.
@@ -350,6 +360,17 @@ def main(
     save_path = os.path.join(parent, "embeddings")
     csv_path  = os.path.join(parent, "embeddings_output.csv")
 
+    if os.path.isdir(savepath):
+        filename = f"EM_{train_name}_E{epochs}.csv"
+        csv_path = os.path.join(savepath, filename)
+        print(f"Saving CSV to {csv_path}")
+    
+    elif os.path.isfile(savepath):
+        csv_path = savepath
+        print(f"Saving CSV to {csv_path}")
+    else:
+        raise ValueError(f"Nonexistent file / director {savepath}")
+
     print(f"Input file is {in_path}.")
 
     # Unpickle
@@ -364,7 +385,7 @@ def main(
 
     original_amt = len(loaded)
     if num_graphs > 0:  # by default, use all 
-        loaded = loaded[0:min(original_amt, num_graphs)-1]
+        loaded = loaded[0:min(original_amt, num_graphs)]
 
     if verbose: 
         amt = num_graphs if num_graphs > 0 else "all"
@@ -453,7 +474,8 @@ def main(
             #print(f"Dist: {dist}")
             return dist 
 
-        num_samples = 800
+        NUM_SAMPLES = 800
+        num_samples = min(NUM_SAMPLES, len(graphs))
         graph_idx = np.random.RandomState(42).randint(len(graphs), size=(num_samples, 2))
 
         targets = [graph_distance(graphs[left], graphs[right]) for left, right in graph_idx]
@@ -480,12 +502,10 @@ def main(
         if verbose: print(f"DONE.")
         print(f"Embeddings have shape {embeddings.shape}")
 
-
         if not write_csv:
             """
             Pickle the embeddings object for later visualisation
             """
-
 
             # Save embeddings 
             data = dict(
@@ -494,7 +514,6 @@ def main(
                 #proteins=protein_ids,
                 #motifs=motifs, # TODO: description of motif
             )
-
 
             if verbose: print("Saving embeddings...", end=" ")
             outfile =  open(save_path, 'wb')
@@ -515,8 +534,13 @@ def main(
                 learning_rate='auto'
             )
             two_d = tsne.fit_transform(embeddings)
+
+            from umap import UMAP
+            umap_2d = UMAP(n_components=2, init='random', random_state=0)
+            proj_2d = umap_2d.fit_transform(embeddings)
             
             if verbose: print(f"Saving to {csv_path}...")
+
 
             with open(csv_path, 'w', newline='') as f:
                 
@@ -534,12 +558,30 @@ def main(
                         'Protein ID'    : gd['name'],
                         'Phosphosite'   : gd['res'], 
                         'Kinase'        : gd['kinase'], 
+                        #'Average RSA'   : gd['average_rsa'],
                         'Set'           : protein_set, 
                         'Method'        : dim_method, 
                         'X'             : two_d[i, 0], 
                         'Y'             : two_d[i, 1],
                     }
                     writer.writerow(row)
+
+                dim_method = 'UMAP'
+                for i, gd in enumerate(graph_dicts):
+
+                    
+                    row = {
+                        'Protein ID'    : gd['name'],
+                        'Phosphosite'   : gd['res'], 
+                        'Kinase'        : gd['kinase'], 
+                        #'Average RSA'   : gd['average_rsa'],
+                        'Set'           : protein_set, 
+                        'Method'        : dim_method, 
+                        'X'             : proj_2d[i, 0], 
+                        'Y'             : proj_2d[i, 1],
+                    }
+                    writer.writerow(row)
+
 
     elif train_method == "node-classification":
         

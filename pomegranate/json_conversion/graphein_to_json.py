@@ -1,15 +1,19 @@
-import networkx.readwrite as nx
+import os
+from typing import Dict, Union
+import graphein.protein as gp
+
+import networkx as nx
 import pandas as pd
 import numpy as np
 import json
 
 from definitions import SAVED_GRAPHS_DIR 
 # import sys # For cmd line debugging
-def g_to_json(g, prot_id, db_name='PDB'):
+def g_to_json(g, prot_id, db_name='PDB', save_path=SAVED_GRAPHS_DIR):
 
     # Test if g is already in JSON format
     try:
-        nx.json_graph.node_link_graph(g)
+        nx.readwrite.json_graph.node_link_graph(g)
         print("good")
         return g
     except:
@@ -50,12 +54,14 @@ def g_to_json(g, prot_id, db_name='PDB'):
                         except AttributeError:
                             continue
 
-        j_graph = nx.json_graph.node_link_data(g)
+        j_graph = nx.readwrite.json_graph.node_link_data(g)
 
         # Write the graph to a JSON file
-        graphs_dir = SAVED_GRAPHS_DIR
-        with open(f"{graphs_dir}/{prot_id}_{db_name}.json", 'w') as f:
-            tmp = nx.json_graph.node_link_data(g)
+        graphs_dir = save_path
+        filename = f"{prot_id}_{db_name}.json"
+        path = os.path.join(save_path, filename)
+        with open(path, 'w') as f:
+            tmp = nx.readwrite.json_graph.node_link_data(g)
             f.write(json.dumps(tmp))
 
         return j_graph
@@ -77,10 +83,23 @@ def g_to_json(g, prot_id, db_name='PDB'):
 '''
 Get graph back from json
 '''
-def load_prot_graph (json_graph):
+def load_prot_graph (
+    json_graph: Union[Dict, str], 
+) -> nx.Graph:
+
+    """
+    :param json_graph: JSON string or JSON object that represents a NetworkX graph.  Can be loaded in from a JSON file. 
+    :type json_graph: Dict
+    :return: NetworkX protein graph
+    :rtype: nx.Graph 
+    """
 
     # Load general graph
-    g = nx.json_graph.node_link_graph(json.loads(json_graph))
+
+    if type(json_graph) == str: 
+        json_graph = json.loads(json_graph)
+    
+    g: nx.Graph = nx.readwrite.json_graph.node_link_graph(json_graph)
 
     # Convert specific fields from strings
     g.graph["pdb_df"] = pd.read_json(g.graph["pdb_df"])

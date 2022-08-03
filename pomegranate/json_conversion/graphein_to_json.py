@@ -12,6 +12,10 @@ from definitions import SAVED_GRAPHS_DIR
 def g_to_json(g, prot_id, db_name='PDB', save_path=SAVED_GRAPHS_DIR):
 
     # Test if g is already in JSON format
+
+    if os.path.isdir(save_path):
+        print("YES")
+
     try:
         nx.readwrite.json_graph.node_link_graph(g)
         print("good")

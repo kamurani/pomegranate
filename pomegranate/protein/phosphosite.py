@@ -80,7 +80,7 @@ def get_protein_graph(id=None, config=None, database='PDB'):
         config = ProteinGraphConfig(edge_construction_functions=edge_fns, 
                                     graph_metadata_functions=[rsa], 
                                     dssp_config=DSSPConfig(),
-                                    pdb_path=pdb_path,
+                                    #pdb_path=pdb_path,
         )   
     
     # NOTE: File paths use '\' in windows systems
@@ -118,7 +118,7 @@ def get_protein_graph(id=None, config=None, database='PDB'):
             if database == 'PDB':
                 g = construct_graph(config=config, pdb_path=protein_path)
             else:
-                g = construct_graph(pdb_path=protein_path)
+                g = construct_graph(config=config, pdb_path=protein_path)
         else:
             print(f"Retrieving {id}...")
             if database == 'PDB':

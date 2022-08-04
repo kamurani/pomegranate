@@ -126,7 +126,7 @@ def get_protein_graph(id=None, config=None, database='PDB'):
                 g = construct_graph(config=config, pdb_code=id)
             else: # NOTE: FIX THIS. BAD STYLE. Same line as 119
                 #g = construct_graph(config=config, pdb_path=protein_path)
-                g = construct_graph(pdb_path=protein_path)
+                g = construct_graph(config=config, pdb_path=protein_path)
 
     # TODO: check if file exists and download if not. 
    

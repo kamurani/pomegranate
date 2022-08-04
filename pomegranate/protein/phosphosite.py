@@ -8,7 +8,7 @@ __all__ = ['get_protein_graph', 'get_protein_subgraph_radius',
 
 
 ### DEFINITIONS
-from definitions import ROOT_DIR, STRUCTURE_PATH, SAVED_PDB_DIR, SAVED_GRAPHS_DIR
+from definitions import ROOT_DIR, STRUCTURE_PATH, SAVED_PDB_DIR, SAVED_GRAPHS_DIR, AF_VERSION
 
 ### External libraries
 import os
@@ -91,7 +91,7 @@ def get_protein_graph(id=None, config=None, database='PDB'):
         print("AF or SP")
         # NOTE: DEBUGGING: construct graph is always looking at examples/pdbs. Just put everything in examples/pdbs
         # protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=STRUCTURE_PATH)
-        protein_path = download_alphafold_structure(id, aligned_score=False, out_dir=SAVED_PDB_DIR)
+        protein_path = download_alphafold_structure(id, AF_VERSION, aligned_score=False, out_dir=SAVED_PDB_DIR)
         #protein_path = STRUCTURE_PATH + id + '.pdb'
         print("After")
 

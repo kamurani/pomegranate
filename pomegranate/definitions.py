@@ -22,5 +22,6 @@ EMBEDDINGS_FILENAME = f"EM_gcn_E{n}.csv"
 EMBEDDINGS_FILENAME = f"ALL_CURRENT.csv"
 EMBEDDINGS_PATH = os.path.join(os.path.join(ROOT_DIR, 'embeddings'), EMBEDDINGS_FILENAME)
 
+AF_VERSION = 3
 
 

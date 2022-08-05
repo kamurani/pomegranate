@@ -42,10 +42,10 @@
     gap: 10px 10px;
     padding: 10px;
 }
-  
-.matrix-display { grid-area: 1 / 1 / 6 / 4; }
-.graph-display { grid-area: 1 / 4 / 4 / 6; }
-.options { grid-area: 4 / 4 / 6 / 6; }
+
+.options { grid-area: 1 / 1 / 3 / 3; }
+.matrix-display { grid-area: 1 / 3 / 6 / 6; }
+.graph-display { grid-area: 3 / 1 / 6 / 3; }
 .sliders { grid-area: 6 / 1 / 7 / 6; }
 
 /* MULTI MOTIF VIEW TAB */

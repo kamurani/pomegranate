@@ -56,9 +56,9 @@ def motifVisualisationTab ():
                 html.H5('Grayscale? ', style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0'}),
                 dcc.Dropdown(
                     id='colour-dropdown',
-                    options=[{'label':"No", 'value': "viridis_r"}, 
+                    options=[{'label':"No", 'value': "amp"}, 
                         {'label':"Yes", 'value':"gray_r"}],
-                    value="viridis_r",
+                    value="amp",
                     style={'float':'left', 'margin':'5px', 'height':'20px', 'bottom':'0', 'width':'200px'}
                 )],
                 style={'height':'30px'}
@@ -131,7 +131,7 @@ def get_marks():
     marks = dict(zip(keys, vals))
     
     # Coloured
-    marks[DEFAULT_MARKING]  = {'label': f'{DEFAULT_MARKING}Å',  'style': {'color': '#f50'}}
+    marks[DEFAULT_MARKING]  = {'label': f'{DEFAULT_MARKING}Å',  'style': {'color': '#b52d37'}}
     marks[BLUE_MARKING]     = {'label': f'{BLUE_MARKING}Å',     'style': {'color': '#77b0b1'}}
     
     return marks

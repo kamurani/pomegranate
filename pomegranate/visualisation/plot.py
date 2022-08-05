@@ -48,7 +48,7 @@ def motif_plot_distance_matrix(
     reverse_order: bool = False,
     title: Optional[str] = None,
     show_residue_labels: bool = True,
-    colour: Optional[str] = 'viridis_r'
+    colour: Optional[str] = 'amp'
 ) -> go.Figure:
     """Plots a distance matrix of the graph.
 
@@ -123,7 +123,7 @@ def multiple_motif_plot_distance_matrix(
     aa_order: Optional[str] = "hydro",
     reverse_order: bool = False,
     show_residue_labels: bool = True,
-    colour: Optional[str] = 'viridis_r'
+    colour: Optional[str] = 'amp'
 ) -> go.Figure:
     """Plots a distance matrix of the graph.
 
@@ -175,7 +175,7 @@ def multiple_motif_plot_distance_matrix(
 
     num_plots = len(to_plot)
 
-    # Assuming number is even?
+    # Show in rows of two
     num_cols = 2
     num_rows = math.ceil(num_plots / 2)
     # Initialize figure with subplots
@@ -185,6 +185,10 @@ def multiple_motif_plot_distance_matrix(
             subplot_titles=titles,
             vertical_spacing=0.1,
         )
+    fig.update_layout(title_font_color='#FBF8F9',
+                      font_color='#FBF8F9',
+                      paper_bgcolor = '#393838'
+                      )
 
     cur_col = 1
     cur_row = 1

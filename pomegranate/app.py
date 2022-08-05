@@ -32,7 +32,7 @@ nestedOptions = fnameDict[names[0]]
 sidebar = html.Div(
     id="sidebar-container",
     children=[
-        html.H3("Find a protein"),
+        html.H3("Find a protein", style={'font-weight':'bold'}),
         html.Hr(),
         dcc.Dropdown(
             id='db-dropdown',

@@ -27,6 +27,7 @@ def get_marks():
     marks[BLUE_MARKING]     = {'label': f'{BLUE_MARKING}Å',     'style': {'color': '#77b0b1'}}
     
     return marks
+#######################################################################
 
 @callback(
     Output('psites-to-compare', 'options'),
@@ -101,9 +102,9 @@ def compareBySideTab ():
                     html.Td([html.H5('Grayscale? ')], style={'text-align':'right'}),
                     html.Td([dcc.Dropdown(
                         id='colour-dropdown',
-                        options=[{'label':"No", 'value': "viridis_r"}, 
+                        options=[{'label':"No", 'value': "amp"}, 
                             {'label':"Yes", 'value':"gray_r"}],
-                        value="viridis_r",
+                        value="amp",
                         style={'height':'20px', 'bottom':'0', 'width':'200px'}
                     )]),
                     html.Td([html.H5('Order matrix by ')], style={'text-align':'right'}),
